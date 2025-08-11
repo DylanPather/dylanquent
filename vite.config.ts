@@ -22,4 +22,5 @@ export default defineConfig({
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
         },
     },
+    base: process.env.VITE_BASE_PATH || '/dylanquent'
 });
