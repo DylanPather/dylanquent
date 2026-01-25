@@ -76,10 +76,10 @@ const recentOrders = [
 ];
 
 const quickActions = [
+    { label: 'Open Point of Sale', href: '/sales/pos' },
     { label: 'Create Product', href: '/products/create' },
     { label: 'New Discount', href: '/discounts/create' },
     { label: 'Upload Inventory CSV', href: '/inventory/import' },
-    { label: 'View Abandoned Carts', href: '/carts/abandoned' },
 ];
 
 const lowStock = [

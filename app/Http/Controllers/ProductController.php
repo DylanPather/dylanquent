@@ -31,8 +31,11 @@ class ProductController extends Controller
                 ];
             });
 
+        $categories = \App\Models\Category::all(['id', 'name']);
+
         return Inertia::render('products/index', [
             'products' => $products,
+            'categories' => $categories,
         ]);
     }
 
@@ -93,7 +96,7 @@ class ProductController extends Controller
      */
     public function edit(string $id): Response
     {
-        $product = Product::findOrFail($id);
+        $product = Product::with('variants:id,product_id,name,sku,price_cents,stock_quantity,is_active')->findOrFail($id);
         return Inertia::render('products/edit', [
             'product' => [
                 'id' => $product->id,
@@ -109,6 +112,16 @@ class ProductController extends Controller
                 'low_stock_threshold' => $product->low_stock_threshold,
                 'is_active' => $product->is_active,
             ],
+            'variants' => $product->variants->map(function ($v) {
+                return [
+                    'id' => $v->id,
+                    'name' => $v->name,
+                    'sku' => $v->sku,
+                    'price' => $v->price_cents ? $v->price_cents / 100 : null,
+                    'stock_quantity' => $v->stock_quantity,
+                    'is_active' => (bool) $v->is_active,
+                ];
+            }),
         ]);
     }
 

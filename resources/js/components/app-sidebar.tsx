@@ -61,6 +61,7 @@ type NavItem = {
     badge?: string | number;
     external?: boolean;
     disabled?: boolean;
+    adminOnly?: boolean;
     items?: NavItem[];
 };
 
@@ -112,6 +113,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Catalog',
         icon: Boxes,
+        adminOnly: true,
         items: [
             { title: 'Products', href: '/catalog/products', icon: Shirt },
             { title: 'Collections', href: '/catalog/collections', icon: Blocks },
@@ -120,7 +122,7 @@ const MAIN_ITEMS: NavItem[] = [
             { title: 'Variants', href: '/catalog/variants', icon: Package },
             { title: 'Reviews', href: '/catalog/reviews', icon: MessageSquareMore, badge: '12' },
             { title: 'Media Library', href: '/catalog/media', icon: ImageIcon },
-            { title: 'Bulk Editor', href: '/catalog/bulk', icon: Files },
+            { title: 'Bulk Editor', href: '/catalog/bulk-editor', icon: Files },
             { title: 'SEO & Meta', href: '/catalog/seo', icon: Brush },
         ],
     },
@@ -129,7 +131,9 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Sales',
         icon: ShoppingBag,
+        adminOnly: true,
         items: [
+            { title: 'Point of Sale', href: '/sales/pos', icon: ShoppingBag },
             { title: 'Orders', href: '/sales/orders', icon: ShoppingCart, badge: '7' },
             { title: 'Invoices', href: '/sales/invoices', icon: Receipt },
             { title: 'Payments', href: '/sales/payments', icon: CreditCard },
@@ -152,6 +156,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Fulfillment',
         icon: Truck,
+        adminOnly: true,
         items: [
             { title: 'Pick & Pack', href: '/fulfillment/pick-pack', icon: Boxes },
             { title: 'Shipping Labels', href: '/fulfillment/labels', icon: Truck },
@@ -163,6 +168,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Inventory',
         icon: Warehouse,
+        adminOnly: true,
         items: [
             { title: 'Stock Levels', href: '/inventory/stock', icon: Box },
             { title: 'Transfers', href: '/inventory/transfers', icon: Truck },
@@ -176,6 +182,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Customers',
         icon: Users,
+        adminOnly: true,
         items: [
             { title: 'All Customers', href: '/customers', icon: Users },
             { title: 'Segments', href: '/customers/segments', icon: Tags },
@@ -187,6 +194,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Marketing',
         icon: Megaphone,
+        adminOnly: true,
         items: [
             { title: 'Campaigns', href: '/marketing/campaigns', icon: Flag },
             { title: 'Email', href: '/marketing/email', icon: Mail },
@@ -201,6 +209,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Content',
         icon: Files,
+        adminOnly: true,
         items: [
             { title: 'Pages', href: '/content/pages', icon: Files },
             { title: 'Blog', href: '/content/blog', icon: Files },
@@ -213,6 +222,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Analytics',
         icon: BarChart3,
+        adminOnly: true,
         items: [
             { title: 'Sales Reports', href: '/analytics/sales', icon: BarChart3 },
             { title: 'Product Performance', href: '/analytics/products', icon: Shirt },
@@ -224,6 +234,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Finance',
         icon: Receipt,
+        adminOnly: true,
         items: [
             { title: 'Payouts', href: '/finance/payouts', icon: HandCoins },
             { title: 'Reconciliation', href: '/finance/reconciliation', icon: Receipt },
@@ -236,6 +247,7 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'Settings',
         icon: Wrench,
+        adminOnly: true,
         items: [
             { title: 'Store', href: '/settings/store', icon: Building2 },
             { title: 'Sales Channels', href: '/settings/channels', icon: Megaphone },
@@ -253,7 +265,9 @@ const MAIN_ITEMS: NavItem[] = [
     {
         title: 'System',
         icon: Wrench,
+        adminOnly: true,
         items: [
+            { title: 'Storefront Content', href: '/system/storefront', icon: Files },
             { title: 'Logs', href: '/system/logs', icon: Files },
             { title: 'Health', href: '/system/health', icon: Gauge },
             { title: 'Background Jobs', href: '/system/jobs', icon: ClipboardList },
@@ -390,7 +404,23 @@ function RecursiveMenu({ items, currentPath, defaultOpenTitles, level = 0 }: Rec
 
 export function AppSidebar() {
     const currentPath = useCurrentPath();
-    const activeChain = React.useMemo(() => collectActiveChain(MAIN_ITEMS, currentPath), [currentPath]);
+    const { props } = usePage();
+    const user = (props as any).auth?.user;
+    const role = user?.role ?? 'user';
+
+    const filteredItems = React.useMemo(() => {
+        const filterRecursive = (items: NavItem[]): NavItem[] => {
+            return items
+                .filter((item) => !item.adminOnly || role === 'admin')
+                .map((item) => ({
+                    ...item,
+                    items: item.items ? filterRecursive(item.items) : undefined,
+                }));
+        };
+        return filterRecursive(MAIN_ITEMS);
+    }, [role]);
+
+    const activeChain = React.useMemo(() => collectActiveChain(filteredItems, currentPath), [filteredItems, currentPath]);
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -399,7 +429,13 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href="/dashboard" prefetch>
-                                <AppLogo />
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-black text-white dark:bg-white dark:text-black">
+                                    <AppLogo className="size-5" />
+                                </div>
+                                <div className="flex flex-col gap-0.5 leading-none">
+                                    <span className="font-bold">Dylanquent</span>
+                                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Admin Portal</span>
+                                </div>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -408,7 +444,7 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <RecursiveMenu
-                    items={MAIN_ITEMS}
+                    items={filteredItems}
                     currentPath={currentPath}
                     defaultOpenTitles={activeChain}
                 />

@@ -1,0 +1,115 @@
+import StorefrontLayout from '../../layouts/storefront-layout';
+import { Head, Link } from '@inertiajs/react';
+import { motion } from 'framer-motion';
+import { Filter, Search, ArrowRight } from 'lucide-react';
+import React from 'react';
+
+interface Props {
+    products: {
+        data: any[];
+        links: any[];
+    };
+}
+
+export default function Index({ products }: Props) {
+    return (
+        <StorefrontLayout title="Catalog">
+            <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-border pb-12 gap-8">
+                    <div>
+                        <h1 className="text-premium-heading mb-4">Archives</h1>
+                        <p className="text-zinc-500 font-light tracking-[0.2em] uppercase text-xs">Explore all released silhouettes.</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
+                            <input
+                                type="text"
+                                placeholder="SEARCH ARCHIVES..."
+                                className="h-12 w-64 rounded-full border border-border bg-zinc-50/50 pl-12 pr-6 text-[10px] font-black uppercase tracking-widest outline-none transition-all focus:w-80 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-900"
+                            />
+                        </div>
+                        <button className="flex items-center gap-2 h-12 px-6 rounded-full border border-border hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                            <Filter className="size-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Filter</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Grid */}
+                <div className="mt-16 grid gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {products.data.map((product, i) => (
+                        <ProductCard key={product.id} product={product} index={i} />
+                    ))}
+
+                    {products.data.length === 0 && (
+                        <div className="col-span-full py-40 text-center">
+                            <p className="text-sm font-black uppercase tracking-[0.4em] text-zinc-400">The archives are currently empty.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Pagination (Simplified) */}
+                {products.data.length > 0 && (
+                    <div className="mt-24 flex justify-center border-t border-border pt-12">
+                        <div className="flex items-center gap-4">
+                            {products.links.map((link: any, i: number) => (
+                                <Link
+                                    key={i}
+                                    href={link.url || '#'}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    className={`size-10 flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${link.active
+                                        ? 'bg-foreground text-background scale-110 shadow-xl'
+                                        : 'hover:bg-zinc-50 dark:hover:bg-zinc-900 opacity-50'
+                                        } ${!link.url && 'opacity-10 pointer-events-none'}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </StorefrontLayout>
+    );
+}
+
+function ProductCard({ product, index }: { product: any; index: number }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: index * 0.1 }}
+            className="group"
+        >
+            <Link href={route('shop.show', product.slug)}>
+                <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-zinc-100 dark:bg-zinc-900 border border-border group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] transition-all duration-700">
+                    <img
+                        src={product.thumbnail_url || '/images/placeholder.png'}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 grayscale-[0.5] group-hover:grayscale-0"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    <div className="absolute left-6 top-6">
+                        <span className="bg-white/90 backdrop-blur-md text-black px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl">
+                            {product.categories?.[0]?.name || 'Uncategorized'}
+                        </span>
+                    </div>
+                </div>
+                <div className="mt-8 space-y-2">
+                    <div className="flex items-start justify-between">
+                        <h3 className="text-lg font-black uppercase tracking-tighter leading-none group-hover:translate-x-2 transition-transform">{product.name}</h3>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                            R{(product.price_cents / 100).toFixed(2)}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className={`size-1.5 rounded-full ${product.stock_quantity > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                            {product.stock_quantity > 0 ? 'INSTOCK' : 'ARCHIVED'}
+                        </span>
+                    </div>
+                </div>
+            </Link>
+        </motion.div>
+    );
+}
