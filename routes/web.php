@@ -91,6 +91,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return Inertia::render('sales/pos');
         })->name('pos');
         Route::get('orders', [SalesOrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/{order}', [SalesOrderController::class, 'show'])->name('orders.show');
+        Route::post('orders/{order}/mark-shipped', [SalesOrderController::class, 'markAsShipped'])->name('orders.mark-shipped');
+        Route::post('orders/{order}/refund', [SalesOrderController::class, 'refund'])->name('orders.refund');
+        Route::post('orders/{order}/status', [SalesOrderController::class, 'updateStatus'])->name('orders.update-status');
         Route::get('invoices', [SalesInvoiceController::class, 'index'])->name('invoices.index');
         Route::prefix('discounts')->name('discounts.')->group(function () {
             Route::get('codes', [SalesDiscountCodeController::class, 'index'])->name('codes.index');
