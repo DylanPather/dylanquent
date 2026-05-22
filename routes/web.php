@@ -16,6 +16,7 @@ use App\Http\Controllers\Storefront\ProductController as StoreProductController;
 use App\Http\Controllers\Storefront\CartController as StoreCartController;
 use App\Http\Controllers\Storefront\CheckoutController as StoreCheckoutController;
 use App\Http\Controllers\Storefront\OrderController as StoreOrderController;
+use App\Http\Controllers\Storefront\PaymentController as StorePaymentController;
 
 Route::get('/', [StoreProductController::class, 'home'])->name('home');
 
@@ -38,11 +39,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/success', [StoreCheckoutController::class, 'success'])->name('success');
     });
 
+    Route::prefix('payment')->name('payment.')->group(function () {
+        Route::get('/', [StorePaymentController::class, 'show'])->name('show');
+        Route::post('/initiate', [StorePaymentController::class, 'initiate'])->name('initiate');
+        Route::post('/confirm', [StorePaymentController::class, 'confirm'])->name('confirm');
+        Route::get('/success/{order_number}', [StorePaymentController::class, 'success'])->name('success');
+    });
+
     Route::prefix('my-account')->name('customer.')->group(function () {
         Route::get('/orders', [StoreOrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order:order_number}', [StoreOrderController::class, 'show'])->name('orders.show');
     });
 });
+
+Route::post('/webhooks/payment/{gateway}', [StorePaymentController::class, 'webhook'])->name('webhook.payment');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

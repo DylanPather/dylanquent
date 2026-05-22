@@ -14,6 +14,10 @@ export default function Welcome() {
         return <ClassicWelcome settings={settings} />;
     }
 
+    if (version === 'minimal') {
+        return <MinimalWelcome settings={settings} />;
+    }
+
     return <PremiumWelcome settings={settings} />;
 }
 
@@ -174,6 +178,96 @@ function ClassicWelcome({ settings }: { settings: any }) {
                                 </div>
                             </Link>
                         ))}
+                    </div>
+                </section>
+            </div>
+        </StorefrontLayout>
+    );
+}
+
+function MinimalWelcome({ settings }: { settings: any }) {
+    const [submitted, setSubmitted] = useState(false);
+    const onSubmit = (e: FormEvent) => { e.preventDefault(); setSubmitted(true); };
+
+    const parseSetting = (val: any) => {
+        if (typeof val === 'string') { try { return JSON.parse(val); } catch (e) { return null; } }
+        return val;
+    };
+
+    const heroTitle = settings.hero_title || 'Dylanquent';
+    const heroDescription = settings.hero_description || 'Clean design. Premium quality. Nothing unnecessary.';
+    const ethosFeatures = Array.isArray(parseSetting(settings.ethos_features)) ? parseSetting(settings.ethos_features) : [];
+
+    return (
+        <StorefrontLayout>
+            <div className="min-h-screen flex flex-col">
+                {/* Hero Section */}
+                <div className="flex-1 flex items-center justify-center px-4 md:px-6 lg:px-10 pt-20 pb-16 md:pb-24">
+                    <div className="max-w-2xl text-center space-y-8 md:space-y-12">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+                            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter leading-[1.1] uppercase">
+                                {heroTitle}
+                            </h1>
+                        </motion.div>
+
+                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.8 }} className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 font-light leading-relaxed max-w-xl mx-auto">
+                            {heroDescription}
+                        </motion.p>
+
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.8 }} className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center pt-8">
+                            <Link href={route('shop.index')} className="h-12 md:h-14 px-8 md:px-10 btn-premium flex items-center justify-center gap-2 text-sm md:text-base group">
+                                Explore <ArrowRight className="size-4 md:size-5 group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                            <a href="#features" className="h-12 md:h-14 px-8 md:px-10 rounded-lg border border-border flex items-center justify-center text-sm md:text-base font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                                Learn More
+                            </a>
+                        </motion.div>
+                    </div>
+                </div>
+
+                {/* Features Section */}
+                <section id="features" className="border-t border-border px-4 md:px-6 lg:px-10 py-16 md:py-24 lg:py-32 bg-zinc-50/50 dark:bg-zinc-900/20">
+                    <div className="max-w-7xl mx-auto">
+                        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="mb-16 md:mb-24">
+                            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase mb-6">Our Values</h2>
+                            <div className="h-1 w-16 md:w-20 bg-foreground rounded-full"></div>
+                        </motion.div>
+
+                        <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+                            {(ethosFeatures.length > 0 ? ethosFeatures : [
+                                { title: 'Intentional', text: 'Every detail is deliberate and purposeful.' },
+                                { title: 'Timeless', text: 'Design that transcends seasonal trends.' },
+                                { title: 'Transparent', text: 'We believe in honest pricing and quality.' }
+                            ]).map((feature: any, i: number) => (
+                                <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.1 }} className="space-y-4 md:space-y-6">
+                                    <div className="space-y-3">
+                                        <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight">{feature.title}</h3>
+                                        <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">{feature.text}</p>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Newsletter Section */}
+                <section className="px-4 md:px-6 lg:px-10 py-16 md:py-24">
+                    <div className="max-w-2xl mx-auto">
+                        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="space-y-8 text-center">
+                            <div className="space-y-4">
+                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter uppercase">Stay Updated</h2>
+                                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 font-light">Get notified when new drops are available.</p>
+                            </div>
+
+                            <form onSubmit={onSubmit} className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                                <input type="email" placeholder="your@email.com" className="h-12 md:h-14 flex-1 bg-white dark:bg-black border border-border rounded-lg px-6 md:px-8 text-sm font-medium outline-none focus:border-foreground transition-colors" required />
+                                <button type="submit" className="h-12 md:h-14 px-8 md:px-10 bg-foreground text-background rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
+                                    {submitted ? '✓ Confirmed' : 'Subscribe'}
+                                </button>
+                            </form>
+
+                            <p className="text-xs md:text-sm text-zinc-500 dark:text-zinc-500 font-light">We respect your inbox. No spam, ever.</p>
+                        </motion.div>
                     </div>
                 </section>
             </div>

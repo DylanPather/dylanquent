@@ -81,9 +81,9 @@ class CheckoutController extends Controller
                 ]);
             }
 
-            session()->forget('cart');
+            session()->put('order_id', $order->id);
 
-            return redirect()->route('checkout.success', ['order' => $order->order_number]);
+            return redirect()->route('payment.show');
         });
     }
 

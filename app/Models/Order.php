@@ -25,12 +25,18 @@ class Order extends Model
         'shipping_address',
         'placed_at',
         'notes',
+        'payment_gateway',
+        'payment_id',
+        'payment_status',
+        'tracking_number',
+        'shipped_at',
     ];
 
     protected $casts = [
         'billing_address' => 'array',
         'shipping_address' => 'array',
         'placed_at' => 'datetime',
+        'shipped_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo
