@@ -267,6 +267,7 @@ const MAIN_ITEMS: NavItem[] = [
         icon: Wrench,
         adminOnly: true,
         items: [
+            { title: 'Users', href: '/system/users', icon: Users },
             { title: 'Storefront Content', href: '/system/storefront', icon: Files },
             { title: 'Logs', href: '/system/logs', icon: Files },
             { title: 'Health', href: '/system/health', icon: Gauge },
@@ -409,16 +410,17 @@ export function AppSidebar() {
     const role = user?.role ?? 'user';
 
     const filteredItems = React.useMemo(() => {
+        const isAdmin = role === 'admin' || (user?.roles && Array.isArray(user.roles) && user.roles.includes('admin'));
         const filterRecursive = (items: NavItem[]): NavItem[] => {
             return items
-                .filter((item) => !item.adminOnly || role === 'admin')
+                .filter((item) => !item.adminOnly || isAdmin)
                 .map((item) => ({
                     ...item,
                     items: item.items ? filterRecursive(item.items) : undefined,
                 }));
         };
         return filterRecursive(MAIN_ITEMS);
-    }, [role]);
+    }, [role, user?.roles]);
 
     const activeChain = React.useMemo(() => collectActiveChain(filteredItems, currentPath), [filteredItems, currentPath]);
 

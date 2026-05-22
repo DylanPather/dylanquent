@@ -66,7 +66,13 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'roles' => $request->user()->getRoleNames()->toArray(),
+                    'role' => $request->user()->getRoleNames()->first(), // Primary role for backward compatibility
+                ] : null,
             ],
             'alerts' => [
                 'low_stock' => $lowStock,
