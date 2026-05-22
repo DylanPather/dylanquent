@@ -116,6 +116,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('system/storefront', [\App\Http\Controllers\System\StorefrontSettingsController::class, 'index'])->name('system.storefront.index');
     Route::post('system/storefront', [\App\Http\Controllers\System\StorefrontSettingsController::class, 'update'])->name('system.storefront.update');
     Route::post('system/storefront/upload-image', [\App\Http\Controllers\System\StorefrontSettingsController::class, 'uploadImage'])->name('system.storefront.upload-image');
+    Route::get('settings/payments', [\App\Http\Controllers\System\PaymentSettingsController::class, 'show'])->name('settings.payments.show');
+    Route::put('settings/payments', [\App\Http\Controllers\System\PaymentSettingsController::class, 'update'])->name('settings.payments.update');
 });
 
 require __DIR__ . '/settings.php';
