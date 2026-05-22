@@ -19,6 +19,7 @@ class StockController extends Controller
             ->paginate(15)
             ->through(function (ProductVariant $v) {
                 $total = $v->inventoryLevels->sum('quantity');
+                $isLowStock = $total <= $v->low_stock_threshold;
                 return [
                     'id' => $v->id,
                     'name' => $v->name ?: $v->product->name,
@@ -29,11 +30,17 @@ class StockController extends Controller
                         'sku' => $v->product->sku,
                     ],
                     'total_quantity' => $total,
+                    'low_stock_threshold' => $v->low_stock_threshold,
+                    'is_low_stock' => $isLowStock,
+                    'is_active' => $v->is_active,
                 ];
             });
 
+        $lowStockCount = $variants->getCollection()->filter(fn($v) => $v['is_low_stock'])->count();
+
         return Inertia::render('inventory/stock', [
             'variants' => $variants,
+            'lowStockCount' => $lowStockCount,
         ]);
     }
 }

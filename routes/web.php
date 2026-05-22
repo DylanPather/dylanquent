@@ -64,6 +64,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Catalog aliases (to match sidebar paths)
     Route::prefix('catalog')->name('catalog.')->group(function () {
         Route::resource('products', ProductController::class)->names('products');
+        Route::post('products/{product}/images', [\App\Http\Controllers\Catalog\ProductImageController::class, 'store'])->name('products.images.store');
+        Route::put('images/{image}', [\App\Http\Controllers\Catalog\ProductImageController::class, 'update'])->name('images.update');
+        Route::delete('images/{image}', [\App\Http\Controllers\Catalog\ProductImageController::class, 'destroy'])->name('images.destroy');
+        Route::post('products/{product}/images/reorder', [\App\Http\Controllers\Catalog\ProductImageController::class, 'reorder'])->name('products.images.reorder');
         Route::resource('variants', CatalogProductVariantController::class);
         Route::resource('categories', \App\Http\Controllers\Catalog\CategoryController::class);
         Route::resource('collections', \App\Http\Controllers\Catalog\CollectionController::class);
@@ -108,6 +112,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // System
     Route::get('system/health', HealthController::class)->name('system.health');
+    Route::resource('system/users', \App\Http\Controllers\System\UserController::class);
     Route::get('system/storefront', [\App\Http\Controllers\System\StorefrontSettingsController::class, 'index'])->name('system.storefront.index');
     Route::post('system/storefront', [\App\Http\Controllers\System\StorefrontSettingsController::class, 'update'])->name('system.storefront.update');
     Route::post('system/storefront/upload-image', [\App\Http\Controllers\System\StorefrontSettingsController::class, 'uploadImage'])->name('system.storefront.upload-image');

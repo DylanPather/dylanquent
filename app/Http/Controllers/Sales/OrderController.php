@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Sales;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\PaymentGateway\PaymentProcessor;
+use App\Services\ShippingService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class OrderController extends Controller
 {
-    public function __construct(private PaymentProcessor $paymentProcessor) {}
+    public function __construct(
+        private PaymentProcessor $paymentProcessor,
+        private ShippingService $shippingService
+    ) {}
 
     public function index(): Response
     {
@@ -69,20 +73,22 @@ class OrderController extends Controller
                 ]),
             ],
             'availableStatuses' => ['pending', 'paid', 'processing', 'fulfilled', 'shipped', 'cancelled', 'refunded'],
+            'availableCarriers' => $this->shippingService->getCarriers(),
         ]);
     }
 
     public function markAsShipped(Request $request, Order $order)
     {
         $validated = $request->validate([
+            'carrier' => 'nullable|string',
             'tracking_number' => 'nullable|string|max:100',
         ]);
 
-        $order->update([
-            'status' => 'shipped',
-            'tracking_number' => $validated['tracking_number'],
-            'shipped_at' => now(),
-        ]);
+        $this->shippingService->markAsShipped(
+            $order,
+            $validated['carrier'] ?? 'usps',
+            $validated['tracking_number']
+        );
 
         return back()->with('message', 'Order marked as shipped');
     }

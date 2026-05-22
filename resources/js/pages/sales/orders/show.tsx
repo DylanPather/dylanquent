@@ -40,19 +40,22 @@ interface OrderData {
         }>;
     };
     availableStatuses: string[];
+    availableCarriers: Record<string, string>;
 }
 
 export default function OrderShow() {
-    const { order, availableStatuses } = usePage().props as any as OrderData;
+    const { order, availableStatuses, availableCarriers } = usePage().props as any as OrderData;
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [showRefundConfirm, setShowRefundConfirm] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
+    const [carrier, setCarrier] = useState('usps');
     const [isShipping, setIsShipping] = useState(false);
     const [newStatus, setNewStatus] = useState(order.status);
 
     const handleMarkShipped = async () => {
         setIsShipping(true);
         router.post(route('sales.orders.mark-shipped', order.id), {
+            carrier,
             tracking_number: trackingNumber,
         }, {
             onFinish: () => setIsShipping(false),
@@ -134,6 +137,18 @@ export default function OrderShow() {
                             <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
                                 <h3 className="font-bold mb-4">Ship This Order</h3>
                                 <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold mb-2">Carrier</label>
+                                        <select
+                                            value={carrier}
+                                            onChange={(e) => setCarrier(e.target.value)}
+                                            className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-sm outline-none focus:ring-2 focus:ring-foreground"
+                                        >
+                                            {Object.entries(availableCarriers).map(([key, name]) => (
+                                                <option key={key} value={key}>{name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     <div>
                                         <label className="block text-sm font-semibold mb-2">Tracking Number</label>
                                         <input

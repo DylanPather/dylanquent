@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputError from '@/components/input-error';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import { Upload, X, Star } from 'lucide-react';
 
 type ProductPayload = {
     id: number;
@@ -29,10 +30,20 @@ type VariantItem = {
     id: number; name: string | null; sku: string; price: number | null; stock_quantity: number; is_active: boolean;
 };
 
+type ImageItem = {
+    id: number;
+    url: string;
+    sort_order: number;
+    is_primary: boolean;
+};
+
 export default function ProductEdit() {
     const { props } = usePage();
     const product = props.product as ProductPayload;
     const variants = (props.variants as VariantItem[]) || [];
+    const images = (props.images as ImageItem[]) || [];
+    const [imageList, setImageList] = React.useState<ImageItem[]>(images);
+    const [uploading, setUploading] = React.useState(false);
 
     const [openCreateVar, setOpenCreateVar] = React.useState(false);
     const [editingVar, setEditingVar] = React.useState<VariantItem | null>(null);
@@ -63,6 +74,42 @@ export default function ProductEdit() {
     const { data, setData, put, processing, errors } = useForm<ProductPayload>({
         ...product,
     });
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.currentTarget.files;
+        if (!files) return;
+
+        setUploading(true);
+        let isPrimary = imageList.length === 0;
+
+        for (const file of Array.from(files)) {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('is_primary', isPrimary ? 'true' : 'false');
+
+            await new Promise((resolve) => {
+                router.post(route('catalog.products.images.store', product.id), formData as any, {
+                    preserveState: true,
+                    onFinish: resolve,
+                });
+            });
+
+            isPrimary = false;
+        }
+
+        router.reload({ only: ['images'] });
+        setUploading(false);
+    };
+
+    const handleSetPrimary = (imageId: number) => {
+        router.put(route('catalog.images.update', imageId), { is_primary: true });
+    };
+
+    const handleDeleteImage = (imageId: number) => {
+        if (confirm('Are you sure you want to delete this image?')) {
+            router.delete(route('catalog.images.destroy', imageId));
+        }
+    };
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -182,6 +229,70 @@ export default function ProductEdit() {
                                 <Input id="currency" value={data.currency} onChange={(e) => setData('currency', e.target.value.toUpperCase())} />
                                 <InputError message={errors.currency} />
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <CardTitle>Product Images</CardTitle>
+                            <CardDescription>Upload and manage product images. First image will be featured.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 transition-colors hover:border-muted-foreground/50">
+                                <label className="flex w-full cursor-pointer flex-col items-center justify-center gap-2">
+                                    <Upload className="h-8 w-8 text-muted-foreground" />
+                                    <div className="text-center">
+                                        <p className="text-sm font-medium">Drop images here or click to select</p>
+                                        <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB each</p>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        disabled={uploading}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+
+                            {imageList.length > 0 && (
+                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {imageList.map((img) => (
+                                        <div key={img.id} className="group relative overflow-hidden rounded-lg border">
+                                            <img src={img.url} alt="Product" className="aspect-square w-full object-cover" />
+                                            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                                                {!img.is_primary && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        onClick={() => handleSetPrimary(img.id)}
+                                                        className="flex items-center gap-1"
+                                                    >
+                                                        <Star className="h-4 w-4" />
+                                                        Primary
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => handleDeleteImage(img.id)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                            {img.is_primary && (
+                                                <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white">
+                                                    <Star className="h-3 w-3 fill-white" />
+                                                    Featured
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

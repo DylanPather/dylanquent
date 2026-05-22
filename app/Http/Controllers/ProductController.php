@@ -44,7 +44,9 @@ class ProductController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('products/create');
+        return Inertia::render('products/create', [
+            'images' => [],
+        ]);
     }
 
     /**
@@ -96,7 +98,11 @@ class ProductController extends Controller
      */
     public function edit(string $id): Response
     {
-        $product = Product::with('variants:id,product_id,name,sku,price_cents,stock_quantity,is_active')->findOrFail($id);
+        $product = Product::with([
+            'variants:id,product_id,name,sku,price_cents,stock_quantity,is_active',
+            'images:id,product_id,url,sort_order,is_primary'
+        ])->findOrFail($id);
+
         return Inertia::render('products/edit', [
             'product' => [
                 'id' => $product->id,
@@ -120,6 +126,14 @@ class ProductController extends Controller
                     'price' => $v->price_cents ? $v->price_cents / 100 : null,
                     'stock_quantity' => $v->stock_quantity,
                     'is_active' => (bool) $v->is_active,
+                ];
+            }),
+            'images' => $product->images->map(function ($img) {
+                return [
+                    'id' => $img->id,
+                    'url' => '/storage/' . $img->url,
+                    'sort_order' => $img->sort_order,
+                    'is_primary' => $img->is_primary,
                 ];
             }),
         ]);

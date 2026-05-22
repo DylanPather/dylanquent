@@ -40,5 +40,20 @@ class ProductVariant extends Model
     {
         return $this->hasMany(InventoryLevel::class);
     }
+
+    public function getTotalStockAttribute(): int
+    {
+        return (int) $this->inventoryLevels()->sum('quantity');
+    }
+
+    public function getIsLowStockAttribute(): bool
+    {
+        return $this->total_stock <= $this->low_stock_threshold;
+    }
+
+    public function isAvailable(int $quantity = 1): bool
+    {
+        return $this->total_stock >= $quantity;
+    }
 }
 
