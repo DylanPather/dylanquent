@@ -9,6 +9,7 @@
  */
 
 $storage = '/tmp/storage';
+$bootstrap = '/tmp/bootstrap';
 
 foreach ([
     $storage.'/app/public',
@@ -17,15 +18,27 @@ foreach ([
     $storage.'/framework/testing',
     $storage.'/framework/views',
     $storage.'/logs',
+    $bootstrap.'/cache',
 ] as $directory) {
     if (! is_dir($directory)) {
         @mkdir($directory, 0755, true);
     }
 }
 
-// Picked up in bootstrap/app.php via useStoragePath().
-putenv('APP_STORAGE_PATH='.$storage);
-$_ENV['APP_STORAGE_PATH'] = $storage;
-$_SERVER['APP_STORAGE_PATH'] = $storage;
+// Reuse the package manifest built at deploy time when it shipped with the
+// bundle; otherwise Laravel regenerates it on each cold start.
+foreach (glob(__DIR__.'/../bootstrap/cache/*.php') ?: [] as $cached) {
+    $target = $bootstrap.'/cache/'.basename($cached);
+    if (! file_exists($target)) {
+        @copy($cached, $target);
+    }
+}
+
+// Both are picked up in bootstrap/app.php.
+foreach (['APP_STORAGE_PATH' => $storage, 'APP_BOOTSTRAP_PATH' => $bootstrap] as $key => $value) {
+    putenv("{$key}={$value}");
+    $_ENV[$key] = $value;
+    $_SERVER[$key] = $value;
+}
 
 require __DIR__.'/../public/index.php';

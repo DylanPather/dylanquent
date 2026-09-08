@@ -40,4 +40,8 @@ if ($storagePath = env('APP_STORAGE_PATH')) {
     $app->useStoragePath($storagePath);
 }
 
+if ($bootstrapPath = env('APP_BOOTSTRAP_PATH')) {
+    $app->useBootstrapPath($bootstrapPath);
+}
+
 return $app;

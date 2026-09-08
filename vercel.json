@@ -1,4 +1,8 @@
 {
+  "framework": null,
+  "outputDirectory": "public",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
   "functions": {
     "api/index.php": {
       "runtime": "vercel-php@0.7.3",
@@ -6,13 +10,10 @@
     }
   },
   "routes": [
-    { "src": "/build/(.*)", "dest": "/public/build/$1" },
-    { "src": "/images/(.*)", "dest": "/public/images/$1" },
-    { "src": "/favicon.(ico|svg)", "dest": "/public/favicon.$1" },
-    { "src": "/apple-touch-icon(.*)", "dest": "/public/apple-touch-icon$1" },
-    { "src": "/robots.txt", "dest": "/public/robots.txt" },
+    { "src": "/build/(.*)", "dest": "/build/$1" },
+    { "src": "/images/(.*)", "dest": "/images/$1" },
+    { "src": "/storage/(.*)", "dest": "/storage/$1" },
+    { "src": "/(favicon\\.(?:ico|svg)|apple-touch-icon.*|robots\\.txt|site\\.webmanifest)", "dest": "/$1" },
     { "src": "/(.*)", "dest": "/api/index.php" }
-  ],
-  "installCommand": "npm ci",
-  "buildCommand": "npm run build"
+  ]
 }
