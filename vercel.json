@@ -1,25 +1,18 @@
 {
-    "version": 2,
-    "framework": null,
-    "functions": {
-        "api/index.php": {
-            "runtime": "vercel-php@0.6.0"
-        }
-    },
-    "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "/api/index.php"
-        }
-    ],
-    "env": {
-        "APP_ENV": "production",
-        "APP_DEBUG": "false",
-        "APP_URL": "https://<your-vercel-domain>.vercel.app",
-        "APP_KEY": "<paste your existing APP_KEY here>",
-        "APP_CONFIG_CACHE": "/tmp/config.php",
-        "VIEW_COMPILED_PATH": "/tmp",
-        "CACHE_DRIVER": "array",
-        "SESSION_DRIVER": "cookie"
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.3",
+      "maxDuration": 30
     }
+  },
+  "routes": [
+    { "src": "/build/(.*)", "dest": "/public/build/$1" },
+    { "src": "/images/(.*)", "dest": "/public/images/$1" },
+    { "src": "/favicon.(ico|svg)", "dest": "/public/favicon.$1" },
+    { "src": "/apple-touch-icon(.*)", "dest": "/public/apple-touch-icon$1" },
+    { "src": "/robots.txt", "dest": "/public/robots.txt" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
+  ],
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build"
 }

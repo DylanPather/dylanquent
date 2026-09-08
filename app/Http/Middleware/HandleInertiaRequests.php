@@ -39,18 +39,61 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        // Low stock alerts (cheap counts)
+        $lowStock = null;
+        try {
+            $lowStockProducts = \App\Models\Product::query()
+                ->where('track_inventory', true)
+                ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+                ->where('low_stock_threshold', '>', 0)
+                ->count();
+            $lowStockVariants = \App\Models\ProductVariant::query()
+                ->where('track_inventory', true)
+                ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+                ->where('low_stock_threshold', '>', 0)
+                ->count();
+            $lowStock = [
+                'count' => $lowStockProducts + $lowStockVariants,
+                'products' => $lowStockProducts,
+                'variants' => $lowStockVariants,
+            ];
+        } catch (\Throwable $e) {
+            $lowStock = ['count' => 0, 'products' => 0, 'variants' => 0];
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'roles' => $request->user()->getRoleNames()->toArray(),
+                    'role' => $request->user()->getRoleNames()->first(), // Primary role for backward compatibility
+                ] : null,
             ],
-            'ziggy' => fn (): array => [
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
+            'alerts' => [
+                'low_stock' => $lowStock,
+            ],
+            'ziggy' => fn(): array => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'sidebarOpen' => !$request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'storefrontSettings' => \App\Models\StorefrontSetting::all()->mapWithKeys(function ($item) {
+                $value = $item->value;
+                if ($item->type === 'json') {
+                    $value = json_decode($value, true);
+                }
+                return [$item->key => $value];
+            }),
+            'cartCount' => collect(session()->get('cart', []))->sum('quantity'),
         ];
     }
 }

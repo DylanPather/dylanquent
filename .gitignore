@@ -23,3 +23,7 @@ yarn-error.log
 /.vscode
 /.zed
 .vercel
+
+# Local database
+/database/*.sqlite
+/database/*.sqlite-journal

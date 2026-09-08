@@ -35,4 +35,26 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET_KEY'),
+        'public' => env('STRIPE_PUBLIC_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'paypal' => [
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET'),
+        'mode' => env('PAYPAL_MODE', 'sandbox'),
+    ],
+
+    'osow' => [
+        'api_key' => env('OSOW_API_KEY'),
+        'webhook_secret' => env('OSOW_WEBHOOK_SECRET'),
+    ],
+
+    'yoco' => [
+        'api_key' => env('YOCO_API_KEY'),
+        'webhook_secret' => env('YOCO_WEBHOOK_SECRET'),
+    ],
+
 ];

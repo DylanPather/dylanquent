@@ -11,7 +11,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Services\PaymentGateway\PaymentProcessor::class, function ($app) {
+            return new \App\Services\PaymentGateway\PaymentProcessor();
+        });
     }
 
     /**
@@ -19,6 +21,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \App\Models\Order::observe(\App\Observers\OrderObserver::class);
     }
 }
