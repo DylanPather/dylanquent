@@ -1,0 +1,15 @@
+.git
+node_modules
+tests
+docker
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+database/*.sqlite
+bootstrap/cache/*.php
+.env
+.env.*
+.claude
+Dockerfile
+docker-compose.yml

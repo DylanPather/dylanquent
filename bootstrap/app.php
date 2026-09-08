@@ -9,7 +9,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -32,3 +32,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+
+// Serverless hosts have a read-only filesystem, but Laravel still needs to
+// write compiled views, sessions, cache and logs. On Vercel this points at
+// /tmp; everywhere else it stays unset and the default storage/ is used.
+if ($storagePath = env('APP_STORAGE_PATH')) {
+    $app->useStoragePath($storagePath);
+}
+
+return $app;

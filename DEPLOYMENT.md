@@ -96,6 +96,87 @@ Cloudflare is free and gives you DNS, CDN and SSL.
 
 ---
 
+## Deploying to Vercel
+
+The repo now carries `vercel.json` and `api/index.php`, so Vercel can run it.
+Read the constraints below before relying on it.
+
+### What works and what does not
+
+| | Status |
+|---|---|
+| Storefront, studio, product pages, cart | Work |
+| Database | **Postgres required** — SQLite cannot work on a read-only filesystem |
+| Admin image uploads | **Need Cloudflare R2 or Vercel Blob.** Seeded images in `public/` are served fine; new uploads have nowhere to go until `FILESYSTEM_DISK=s3` is configured |
+| Queue worker | None. Mail sends inline, so this is survivable today |
+| Scheduler / cron | None on the free tier |
+| Cold starts | Laravel boots on each idle invocation |
+| Commercial use | The Hobby (free) plan is for non-commercial projects |
+
+### Steps
+
+1. **Create the database.** In the Vercel dashboard: Storage → create a
+   Neon Postgres database. Copy the connection details.
+
+2. **Import the repo.** vercel.com/new → pick `DylanPather/dylanquent`.
+   Framework preset: **Other**. Vercel reads `vercel.json` for the rest.
+
+3. **Set environment variables** (Project Settings → Environment Variables):
+   ```
+   APP_NAME=Dylanquent
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_KEY=            # php artisan key:generate --show
+   APP_URL=https://your-project.vercel.app
+
+   DB_CONNECTION=pgsql
+   DB_HOST=            # from Neon
+   DB_PORT=5432
+   DB_DATABASE=
+   DB_USERNAME=
+   DB_PASSWORD=
+   DB_SSLMODE=require
+
+   SESSION_DRIVER=database
+   CACHE_STORE=database
+   QUEUE_CONNECTION=sync     # no workers exist on Vercel
+   FILESYSTEM_DISK=public
+   LOG_CHANNEL=stderr
+   ```
+
+4. **Run migrations from your machine**, since Vercel has no deploy hook or
+   shell. Point a local env file at the Neon database and run:
+   ```
+   php artisan migrate --force
+   php artisan db:seed --force      # first deploy only
+   ```
+
+5. **Deploy.** Push to the connected branch.
+
+6. **Domain.** Vercel → Project → Domains → add `dylanquent.com`. It shows
+   the records to create. In GoDaddy (or Cloudflare, if you moved
+   nameservers there), add the `A` / `CNAME` it asks for.
+
+### If the first deploy fails
+
+`vercel-php` is a community runtime and its version moves. The most common
+fixes:
+
+- Bump the runtime version in `vercel.json` (`vercel-php@0.7.3`) to the
+  current release.
+- If assets 404, confirm `npm run build` ran in the build log and that
+  `public/build` exists in the deployment.
+- If you get a 500 with no detail, set `APP_DEBUG=true` temporarily and
+  read the function logs, then turn it back off.
+
+### Moving uploads to R2 later
+
+Uploads already follow `FILESYSTEM_DISK`, so this is configuration only:
+set it to `s3` and fill in the `AWS_*` values in
+`.env.production.example`. No code change.
+
+---
+
 ## Alternatives
 
 | Host | Cost | Catch |
