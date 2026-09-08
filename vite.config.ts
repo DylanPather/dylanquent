@@ -22,5 +22,7 @@ export default defineConfig({
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
         },
     },
-    base: process.env.VITE_BASE_PATH || '/dylanquent'
+    // Root-domain deploys need '/'. Set VITE_BASE_PATH to deploy under a
+    // subpath (e.g. GitHub Pages at /dylanquent).
+    base: process.env.VITE_BASE_PATH || '/'
 });
