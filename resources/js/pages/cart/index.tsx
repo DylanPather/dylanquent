@@ -29,18 +29,18 @@ export default function Index({ cart }: Props) {
                         {/* Summary */}
                         <div className="lg:col-span-1">
                             <div className="glass-panel p-6 md:p-8 lg:p-10 rounded-[2rem] md:rounded-[2.5rem] lg:sticky lg:top-32">
-                                <h3 className="text-xs md:text-sm font-black uppercase tracking-[0.4em] mb-6 md:mb-10 border-b border-border pb-4 md:pb-6">Archive Summary</h3>
+                                <h3 className="text-xs md:text-sm font-black uppercase tracking-[0.16em] mb-6 md:mb-10 border-b border-border pb-4 md:pb-6">Archive Summary</h3>
                                 <div className="space-y-4 md:space-y-6 mb-6 md:mb-10">
-                                    <div className="flex justify-between text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-400">
+                                    <div className="flex justify-between text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] copy-muted">
                                         <span>Subtotal</span>
                                         <span>R{(subtotal / 100).toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-400">
+                                    <div className="flex justify-between text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] copy-muted">
                                         <span>Acquisition Tax</span>
                                         <span>Calculated at checkout</span>
                                     </div>
                                     <div className="pt-4 md:pt-6 border-t border-border flex justify-between items-end">
-                                        <span className="text-sm font-black uppercase tracking-[0.2em]">Total</span>
+                                        <span className="text-sm font-black uppercase tracking-[0.1em]">Total</span>
                                         <span className="text-2xl md:text-3xl font-light">R{(subtotal / 100).toFixed(2)}</span>
                                     </div>
                                 </div>
@@ -51,7 +51,7 @@ export default function Index({ cart }: Props) {
                                     Proceed to Checkout
                                     <ArrowRight className="size-4 group-hover:translate-x-2 transition-transform" />
                                 </Link>
-                                <p className="mt-4 md:mt-6 text-[7px] md:text-[8px] text-center uppercase font-black tracking-widest text-zinc-400">
+                                <p className="mt-4 md:mt-6 text-[7px] md:text-[12px] text-center uppercase font-bold tracking-[0.1em] copy-muted">
                                     Secure verification required for high-fidelity pieces.
                                 </p>
                             </div>
@@ -62,8 +62,8 @@ export default function Index({ cart }: Props) {
                         <div className="size-20 md:size-24 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-border flex items-center justify-center mb-6 md:mb-10">
                             <ShoppingBag className="size-7 md:size-8 text-zinc-300" />
                         </div>
-                        <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter mb-3 md:mb-4 text-zinc-400">Your Archive is Empty</h2>
-                        <Link href={route('shop.index')} className="text-[10px] md:text-xs font-black uppercase tracking-widest border-b-2 border-foreground pb-1 hover:pb-2 transition-all">
+                        <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter mb-3 md:mb-4 copy-muted">Your Archive is Empty</h2>
+                        <Link href={route('shop.index')} className="text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] border-b-2 border-foreground pb-1 hover:pb-2 transition-all">
                             Browse Collection
                         </Link>
                     </div>
@@ -105,7 +105,7 @@ function CartItem({ item }: { item: any }) {
             </div>
             <div className="flex-1 flex flex-col gap-2">
                 <h3 className="text-xl font-black uppercase tracking-tighter italic">{item.name}</h3>
-                <p className="text-sm font-light text-zinc-400">Acquisition ID: {item.id}</p>
+                <p className="text-sm font-light copy-muted">Acquisition ID: {item.id}</p>
                 <div className="mt-4 flex items-center justify-between">
                     <div className="h-12 flex items-center border border-border rounded-xl px-1">
                         <button
@@ -134,7 +134,7 @@ function CartItem({ item }: { item: any }) {
             </div>
             <div className="text-right">
                 <p className="text-2xl font-light">R{((item.price_cents * item.quantity) / 100).toFixed(2)}</p>
-                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mt-1">R{(item.price_cents / 100).toFixed(2)} / UNIT</p>
+                <p className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted mt-1">R{(item.price_cents / 100).toFixed(2)} / UNIT</p>
             </div>
         </motion.div>
     );

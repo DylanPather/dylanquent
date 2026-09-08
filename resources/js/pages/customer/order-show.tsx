@@ -15,7 +15,7 @@ export default function OrderShow({ order }: Props) {
                 {/* Back Nav */}
                 <Link
                     href={route('customer.orders.index')}
-                    className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 hover:text-foreground transition-all mb-12"
+                    className="inline-flex items-center gap-3 text-[12px] font-bold uppercase tracking-[0.14em] copy-muted hover:text-foreground transition-all mb-12"
                 >
                     <ChevronLeft className="size-4" />
                     Archive Directory
@@ -27,18 +27,18 @@ export default function OrderShow({ order }: Props) {
                         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4">{order.order_number}</h1>
                         <div className="flex flex-wrap items-center gap-6">
                             <div className="flex items-center gap-2">
-                                <Calendar className="size-3 text-zinc-400" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{new Date(order.placed_at).toLocaleDateString()}</span>
+                                <Calendar className="size-3 copy-muted" />
+                                <span className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">{new Date(order.placed_at).toLocaleDateString()}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">{order.status}</span>
+                                <span className="text-[12px] font-bold uppercase tracking-[0.1em]">{order.status}</span>
                             </div>
                         </div>
                     </div>
                     <button
                         onClick={() => window.print()}
-                        className="h-14 px-8 rounded-2xl border border-border flex items-center gap-4 text-xs font-black uppercase tracking-widest hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all"
+                        className="h-14 px-8 rounded-2xl border border-border flex items-center gap-4 text-xs font-black uppercase tracking-[0.1em] hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all"
                     >
                         <Printer className="size-4" />
                         Print Manifest
@@ -55,7 +55,7 @@ export default function OrderShow({ order }: Props) {
                                 </div>
                                 <div className="flex-1 space-y-2">
                                     <h3 className="text-xl font-black uppercase tracking-tighter">{item.name}</h3>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Qty: {item.quantity} &mdash; SKU: {item.sku || 'N/A'}</p>
+                                    <p className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">Qty: {item.quantity} &mdash; SKU: {item.sku || 'N/A'}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xl font-light">R{(item.total_cents / 100).toFixed(2)}</p>
@@ -68,18 +68,18 @@ export default function OrderShow({ order }: Props) {
                     <div className="lg:col-span-1 space-y-10">
                         {/* Summary */}
                         <div className="glass-panel p-10 rounded-[2.5rem] space-y-8">
-                            <h3 className="text-sm font-black uppercase tracking-[0.4em] mb-4 border-b border-border pb-4">Acquisition Summary</h3>
+                            <h3 className="text-sm font-black uppercase tracking-[0.16em] mb-4 border-b border-border pb-4">Acquisition Summary</h3>
                             <div className="space-y-4">
-                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                <div className="flex justify-between text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">
                                     <span>Subtotal</span>
                                     <span>R{(order.subtotal_cents / 100).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                <div className="flex justify-between text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">
                                     <span>Transit Fee</span>
                                     <span className="text-emerald-500">Gratis</span>
                                 </div>
                                 <div className="pt-6 border-t border-border flex justify-between items-end">
-                                    <span className="text-xs font-black uppercase tracking-[0.2em]">Acquired Total</span>
+                                    <span className="text-xs font-black uppercase tracking-[0.1em]">Acquired Total</span>
                                     <span className="text-3xl font-light">R{(order.total_cents / 100).toFixed(2)}</span>
                                 </div>
                             </div>
@@ -87,12 +87,12 @@ export default function OrderShow({ order }: Props) {
 
                         {/* Shipping */}
                         <div className="glass-panel p-10 rounded-[2.5rem] space-y-6">
-                            <h3 className="text-sm font-black uppercase tracking-[0.4em] border-b border-border pb-4 flex items-center gap-3">
+                            <h3 className="text-sm font-black uppercase tracking-[0.16em] border-b border-border pb-4 flex items-center gap-3">
                                 <Truck className="size-4" />
                                 Transit Protocol
                             </h3>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+                                <p className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted flex items-center gap-2">
                                     <MapPin className="size-3" /> Destination
                                 </p>
                                 <p className="text-sm font-medium leading-relaxed">

@@ -19,20 +19,20 @@ export default function Index({ products }: Props) {
                 <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-border pb-12 gap-8">
                     <div>
                         <h1 className="text-premium-heading mb-4">Archives</h1>
-                        <p className="text-zinc-500 font-light tracking-[0.2em] uppercase text-xs">Explore all released silhouettes.</p>
+                        <p className="copy-muted font-light tracking-[0.1em] uppercase text-xs">Explore all released silhouettes.</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 copy-muted" />
                             <input
                                 type="text"
                                 placeholder="SEARCH ARCHIVES..."
-                                className="h-12 w-64 rounded-full border border-border bg-zinc-50/50 pl-12 pr-6 text-[10px] font-black uppercase tracking-widest outline-none transition-all focus:w-80 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-900"
+                                className="h-12 w-64 rounded-full border border-border bg-zinc-50/50 pl-12 pr-6 text-[12px] font-bold uppercase tracking-[0.1em] outline-none transition-all focus:w-80 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-900"
                             />
                         </div>
                         <button className="flex items-center gap-2 h-12 px-6 rounded-full border border-border hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
                             <Filter className="size-4" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Filter</span>
+                            <span className="text-[12px] font-bold uppercase tracking-[0.1em]">Filter</span>
                         </button>
                     </div>
                 </div>
@@ -45,7 +45,7 @@ export default function Index({ products }: Props) {
 
                     {products.data.length === 0 && (
                         <div className="col-span-full py-40 text-center">
-                            <p className="text-sm font-black uppercase tracking-[0.4em] text-zinc-400">The archives are currently empty.</p>
+                            <p className="text-sm font-black uppercase tracking-[0.16em] copy-muted">The archives are currently empty.</p>
                         </div>
                     )}
                 </div>
@@ -59,7 +59,7 @@ export default function Index({ products }: Props) {
                                     key={i}
                                     href={link.url || '#'}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className={`size-10 flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${link.active
+                                    className={`size-10 flex items-center justify-center rounded-full text-[12px] font-bold uppercase tracking-[0.1em] transition-all ${link.active
                                         ? 'bg-foreground text-background scale-110 shadow-xl'
                                         : 'hover:bg-zinc-50 dark:hover:bg-zinc-900 opacity-50'
                                         } ${!link.url && 'opacity-10 pointer-events-none'}`}
@@ -90,7 +90,7 @@ function ProductCard({ product, index }: { product: any; index: number }) {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                     <div className="absolute left-6 top-6">
-                        <span className="bg-white/90 backdrop-blur-md text-black px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl">
+                        <span className="bg-white/90 backdrop-blur-md text-black px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] shadow-xl">
                             {product.categories?.[0]?.name || 'Uncategorized'}
                         </span>
                     </div>
@@ -98,13 +98,13 @@ function ProductCard({ product, index }: { product: any; index: number }) {
                 <div className="mt-8 space-y-2">
                     <div className="flex items-start justify-between">
                         <h3 className="text-lg font-black uppercase tracking-tighter leading-none group-hover:translate-x-2 transition-transform">{product.name}</h3>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        <span className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">
                             R{(product.price_cents / 100).toFixed(2)}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className={`size-1.5 rounded-full ${product.stock_quantity > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                        <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.1em] copy-muted">
                             {product.stock_quantity > 0 ? 'INSTOCK' : 'ARCHIVED'}
                         </span>
                     </div>

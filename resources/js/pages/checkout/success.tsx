@@ -23,28 +23,28 @@ export default function Success({ order }: Props) {
                 </motion.div>
 
                 <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">Identity Verified.</h1>
-                <p className="text-xl text-zinc-500 font-light max-w-xl mx-auto mb-12 leading-relaxed">
+                <p className="text-xl copy-muted font-light max-w-xl mx-auto mb-12 leading-relaxed">
                     The Acquisition Protocol for <span className="text-foreground font-medium">{order.order_number}</span> has been successfully initialized. Your pieces are being curated for dispatch.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                     <Link
                         href={route('customer.orders.index')}
-                        className="h-14 px-8 rounded-2xl bg-foreground text-background text-xs font-black uppercase tracking-widest flex items-center gap-3 hover:scale-105 active:scale-95 transition-all"
+                        className="h-14 px-8 rounded-2xl bg-foreground text-background text-xs font-black uppercase tracking-[0.1em] flex items-center gap-3 hover:scale-105 active:scale-95 transition-all"
                     >
                         <Package className="size-4" />
                         Track Transit
                     </Link>
                     <button
                         onClick={() => window.print()}
-                        className="h-14 px-8 rounded-2xl border border-border text-xs font-black uppercase tracking-widest flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all"
+                        className="h-14 px-8 rounded-2xl border border-border text-xs font-black uppercase tracking-[0.1em] flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all"
                     >
                         <Printer className="size-4" />
                         Print Receipt
                     </button>
                     <Link
                         href={route('shop.index')}
-                        className="h-14 px-8 text-xs font-black uppercase tracking-widest flex items-center gap-2 group opacity-50 hover:opacity-100 transition-opacity"
+                        className="h-14 px-8 text-xs font-black uppercase tracking-[0.1em] flex items-center gap-2 group opacity-50 hover:opacity-100 transition-opacity"
                     >
                         Return to Archives
                         <ArrowRight className="size-4 group-hover:translate-x-2 transition-transform" />

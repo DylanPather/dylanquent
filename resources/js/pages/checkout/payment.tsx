@@ -84,7 +84,7 @@ export default function Payment() {
             <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 py-12 px-4">
                 <div className="max-w-2xl mx-auto">
                     {/* Back Button */}
-                    <Link href={route('checkout.index')} className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 mb-8 transition-colors">
+                    <Link href={route('checkout.index')} className="inline-flex items-center gap-2 text-sm font-semibold copy-muted hover:text-zinc-900 dark:hover:text-zinc-200 mb-8 transition-colors">
                         <ArrowLeft className="size-4" />
                         Back to Checkout
                     </Link>
@@ -93,11 +93,11 @@ export default function Payment() {
                     <div className="bg-white dark:bg-zinc-800 rounded-2xl p-6 md:p-8 mb-8 shadow-sm border border-zinc-200 dark:border-zinc-700">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg md:text-xl font-black tracking-tight">Order Summary</h2>
-                            <span className="text-xs font-black uppercase tracking-widest text-zinc-500">#{order.order_number}</span>
+                            <span className="text-xs font-black uppercase tracking-[0.1em] copy-muted">#{order.order_number}</span>
                         </div>
                         <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4">
                             <div className="flex items-center justify-between">
-                                <span className="text-base text-zinc-600 dark:text-zinc-400">Total Amount</span>
+                                <span className="text-base copy-muted">Total Amount</span>
                                 <span className="text-2xl md:text-3xl font-black">{amountFormatted} {order.currency}</span>
                             </div>
                         </div>
@@ -138,7 +138,7 @@ export default function Payment() {
                         <button
                             onClick={initiatePayment}
                             disabled={loading}
-                            className="w-full h-14 md:h-16 bg-foreground text-background rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-sm md:text-base hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                            className="w-full h-14 md:h-16 bg-foreground text-background rounded-xl md:rounded-2xl font-black uppercase tracking-[0.1em] text-sm md:text-base hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 <>
@@ -150,13 +150,13 @@ export default function Payment() {
                             )}
                         </button>
 
-                        <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-4">
+                        <p className="text-center text-xs copy-muted mt-4">
                             Your payment information is securely processed by our payment partners.
                         </p>
                     </div>
 
                     {/* Security Badge */}
-                    <div className="mt-8 flex items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                    <div className="mt-8 flex items-center justify-center gap-2 text-xs copy-muted">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>

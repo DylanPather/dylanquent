@@ -161,6 +161,19 @@
         @apply text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-none;
     }
 
+
+    /* Readable-minimal type helpers.
+       Both derive from currentColor, so they stay legible on inverted
+       surfaces (the dark contact panel, the featured price card) without
+       needing a light/dark ternary at every call site. */
+    .copy-muted {
+        color: color-mix(in srgb, currentColor 65%, transparent);
+    }
+
+    .copy-ghost {
+        color: color-mix(in srgb, currentColor 50%, transparent);
+    }
+
     .font-logo {
         font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif !important;
         font-weight: 900 !important;

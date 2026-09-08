@@ -48,7 +48,7 @@ export default function Index({ cart, customer }: Props) {
                             </div>
                             <div className="grid gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-zinc-400">Street Address</label>
+                                    <label className="text-[12px] uppercase font-bold tracking-[0.1em] copy-muted">Street Address</label>
                                     <input
                                         type="text"
                                         value={data.shipping_address.address}
@@ -59,7 +59,7 @@ export default function Index({ cart, customer }: Props) {
                                 </div>
                                 <div className="grid md:grid-cols-3 gap-6">
                                     <div className="space-y-2 lg:col-span-2">
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-zinc-400">City</label>
+                                        <label className="text-[12px] uppercase font-bold tracking-[0.1em] copy-muted">City</label>
                                         <input
                                             type="text"
                                             value={data.shipping_address.city}
@@ -69,7 +69,7 @@ export default function Index({ cart, customer }: Props) {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-zinc-400">Postal Code</label>
+                                        <label className="text-[12px] uppercase font-bold tracking-[0.1em] copy-muted">Postal Code</label>
                                         <input
                                             type="text"
                                             value={data.shipping_address.postal_code}
@@ -86,11 +86,11 @@ export default function Index({ cart, customer }: Props) {
                         <section>
                             <div className="flex items-center gap-4 mb-10 pb-6 border-b border-border">
                                 <div className="size-10 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-black italic">2</div>
-                                <h2 className="text-2xl font-black uppercase tracking-widest">Verification & Payment</h2>
+                                <h2 className="text-2xl font-black uppercase tracking-[0.1em]">Verification & Payment</h2>
                             </div>
                             <div className="p-10 rounded-[2.5rem] bg-zinc-50 dark:bg-zinc-950 border border-border flex flex-col items-center text-center gap-6">
                                 <CreditCard className="size-10 text-zinc-300" />
-                                <p className="text-zinc-500 font-light max-w-sm">
+                                <p className="copy-muted font-light max-w-sm">
                                     Payment processing is handled via secure identity verification. By continuing, you agree to the Dylanquent Acquisition Protocol.
                                 </p>
                             </div>
@@ -101,28 +101,28 @@ export default function Index({ cart, customer }: Props) {
                     <div className="lg:col-span-1">
                         <div className="glass-panel p-10 rounded-[2.5rem] sticky top-32 space-y-10">
                             <div>
-                                <h3 className="text-sm font-black uppercase tracking-[0.4em] mb-8 border-b border-border pb-4">Manifest</h3>
+                                <h3 className="text-sm font-black uppercase tracking-[0.16em] mb-8 border-b border-border pb-4">Manifest</h3>
                                 <div className="space-y-6 max-h-60 overflow-y-auto pr-4">
                                     {cartItems.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                        <div key={item.id} className="flex justify-between items-center text-[12px] font-bold uppercase tracking-[0.1em]">
                                             <span className="truncate max-w-[140px]">{item.name} x{item.quantity}</span>
-                                            <span className="text-zinc-400">R{((item.price_cents * item.quantity) / 100).toFixed(2)}</span>
+                                            <span className="copy-muted">R{((item.price_cents * item.quantity) / 100).toFixed(2)}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
                             <div className="pt-8 border-t border-border space-y-4">
-                                <div className="flex justify-between text-xs font-black uppercase tracking-widest text-zinc-400">
+                                <div className="flex justify-between text-xs font-black uppercase tracking-[0.1em] copy-muted">
                                     <span>Subtotal</span>
                                     <span>R{(subtotal / 100).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-xs font-black uppercase tracking-widest text-zinc-400">
+                                <div className="flex justify-between text-xs font-black uppercase tracking-[0.1em] copy-muted">
                                     <span>Shipping</span>
                                     <span className="text-emerald-500">Complimentary</span>
                                 </div>
                                 <div className="pt-6 border-t border-border flex justify-between items-end">
-                                    <span className="text-sm font-black uppercase tracking-[0.2em]">Total</span>
+                                    <span className="text-sm font-black uppercase tracking-[0.1em]">Total</span>
                                     <span className="text-3xl font-light">R{(subtotal / 100).toFixed(2)}</span>
                                 </div>
                             </div>
