@@ -20,8 +20,8 @@ class StorefrontInventorySeeder extends Seeder
     public function run(): void
     {
         $warehouse = Warehouse::updateOrCreate(
-            ['code' => 'CPT-01'],
-            ['name' => 'Cape Town Studio', 'address' => 'Cape Town, ZA', 'is_active' => true]
+            ['code' => 'JHB-01'],
+            ['name' => 'Johannesburg Studio', 'address' => 'Johannesburg, ZA', 'is_active' => true]
         );
 
         // Deliberately varied so the page's in-stock / low-stock / sold-out

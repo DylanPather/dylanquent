@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             RegularUserSeeder::class,
             StorefrontSettingsSeeder::class,
+            StorefrontProductSeeder::class,
             CatalogSeeder::class,
             StorefrontInventorySeeder::class,
         ]);

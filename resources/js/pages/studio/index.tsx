@@ -398,7 +398,7 @@ function Contact({
                             scoping call, or an honest no if it is not a fit.
                         </p>
                         <div className="space-y-2 border-t border-zinc-500/30 pt-6 text-[12px] font-bold uppercase tracking-[0.14em] copy-muted">
-                            <p>Cape Town, ZA — Remote worldwide</p>
+                            <p>Johannesburg, ZA — Remote worldwide</p>
                             <p>Reply within 1 business day</p>
                         </div>
                     </div>

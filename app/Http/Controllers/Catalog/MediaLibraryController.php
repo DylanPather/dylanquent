@@ -10,7 +10,7 @@ class MediaLibraryController extends Controller
     public function index()
     {
         // For now, listing storefront images as mock data
-        $files = \Illuminate\Support\Facades\Storage::disk('public')->files('storefront');
+        $files = \Illuminate\Support\Facades\Storage::disk(config('filesystems.default'))->files('storefront');
         $media = array_map(function ($file) {
             return [
                 'name' => basename($file),

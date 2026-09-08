@@ -1,0 +1,19 @@
+# Local production-parity testing:  docker compose up --build
+# Coolify and most container hosts read the Dockerfile directly and
+# ignore this file.
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.production
+    volumes:
+      # Persist the SQLite database and any locally-stored uploads.
+      - dylanquent-db:/var/www/html/database
+      - dylanquent-storage:/var/www/html/storage/app/public
+    restart: unless-stopped
+
+volumes:
+  dylanquent-db:
+  dylanquent-storage:

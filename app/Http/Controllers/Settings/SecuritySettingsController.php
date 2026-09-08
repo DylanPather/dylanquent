@@ -23,7 +23,7 @@ class SecuritySettingsController extends Controller
         $sessions = collect([
             ['id' => 1, 'device' => 'MacBook Pro', 'location' => 'Johannesburg, ZA', 'last_active' => 'Just now', 'ip' => '197.53.123.45'],
             ['id' => 2, 'device' => 'iPhone 12', 'location' => 'Johannesburg, ZA', 'last_active' => '2 hours ago', 'ip' => '197.53.124.50'],
-            ['id' => 3, 'device' => 'Unknown Device', 'location' => 'Cape Town, ZA', 'last_active' => '5 days ago', 'ip' => '105.27.100.100'],
+            ['id' => 3, 'device' => 'Unknown Device', 'location' => 'Johannesburg, ZA', 'last_active' => '5 days ago', 'ip' => '105.27.100.100'],
         ])->all();
 
         return Inertia::render('settings/security', [

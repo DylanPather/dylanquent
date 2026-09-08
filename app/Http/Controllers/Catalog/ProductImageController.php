@@ -18,7 +18,7 @@ class ProductImageController extends Controller
         ]);
 
         if ($request->file('image')) {
-            $path = $request->file('image')->store('products', 'public');
+            $path = $request->file('image')->store('products', config('filesystems.default'));
 
             $image = ProductImage::create([
                 'product_id' => $product->id,
@@ -56,7 +56,13 @@ class ProductImageController extends Controller
     public function destroy(ProductImage $image)
     {
         $product = $image->product;
-        Storage::disk('public')->delete($image->url);
+
+        // Seeded assets live under public/ and are not ours to delete.
+        if ($path = $image->storagePath()) {
+            if (! str_starts_with($path, '/') && ! str_starts_with($path, 'http')) {
+                Storage::disk(config('filesystems.default'))->delete($path);
+            }
+        }
 
         $image->delete();
 

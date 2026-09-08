@@ -18,7 +18,7 @@ function makeProduct(int $stock = 10, bool $track = true): array
         'product_id' => $product->id, 'name' => 'Medium', 'sku' => 'DQ-TEE-M',
         'price_cents' => 5500, 'track_inventory' => $track, 'is_active' => true,
     ]);
-    $warehouse = Warehouse::create(['name' => 'CPT', 'code' => 'CPT-01', 'is_active' => true]);
+    $warehouse = Warehouse::create(['name' => 'JHB', 'code' => 'JHB-01', 'is_active' => true]);
     InventoryLevel::create([
         'product_variant_id' => $variant->id, 'warehouse_id' => $warehouse->id, 'quantity' => $stock,
     ]);

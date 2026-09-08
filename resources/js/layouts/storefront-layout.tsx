@@ -101,7 +101,7 @@ export default function StorefrontLayout({ children, title }: Props) {
                                 <Link onClick={() => setIsMobileMenuOpen(false)} href={auth.user ? route('dashboard') : route('login')}>Account</Link>
                             </nav>
                             <div className="mt-auto pt-10 border-t border-zinc-100 dark:border-zinc-800 text-[12px] uppercase font-bold tracking-[0.1em] copy-muted">
-                                JP / TYO &mdash; ZA / CPT
+                                JP / TYO &mdash; ZA / JHB
                             </div>
                         </div>
                     </motion.div>

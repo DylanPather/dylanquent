@@ -21,7 +21,7 @@ class BrandController extends Controller
                     'title' => 'Software',
                     'subtitle' => 'Solo Development Studio',
                     'description' => 'Web platforms, product apps and internal tools — designed, built and shipped end to end by one developer.',
-                    'meta' => ['Laravel · React', 'Product & Platform', 'Cape Town / Remote'],
+                    'meta' => ['Laravel · React', 'Product & Platform', 'Johannesburg / Remote'],
                     'cta' => 'Enter Studio',
                     'href' => route('studio.index'),
                 ],

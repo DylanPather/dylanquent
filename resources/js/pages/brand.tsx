@@ -70,7 +70,7 @@ export default function Brand() {
             {/* Footer */}
             <footer className="relative z-10 flex flex-col items-center justify-between gap-2 border-t border-border px-5 py-5 text-[11px] font-bold uppercase tracking-[0.16em] copy-muted sm:flex-row md:px-10 md:text-[12px]">
                 <p>© {new Date().getFullYear()} Dylanquent</p>
-                <p>ZA / CPT — Remote</p>
+                <p>ZA / JHB — Remote</p>
             </footer>
         </div>
     );
