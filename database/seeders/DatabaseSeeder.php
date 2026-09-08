@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RegularUserSeeder::class,
             StorefrontSettingsSeeder::class,
             CatalogSeeder::class,
+            StorefrontInventorySeeder::class,
         ]);
     }
 }

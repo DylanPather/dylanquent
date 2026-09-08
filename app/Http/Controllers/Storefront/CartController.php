@@ -21,50 +21,99 @@ class CartController extends Controller
 
     public function add(Request $request)
     {
-        $request->validate([
+        $data = $request->validate([
             'product_id' => 'required|exists:products,id',
             'variant_id' => 'nullable|exists:product_variants,id',
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:1|max:99',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
-        $variant = $request->variant_id ? ProductVariant::findOrFail($request->variant_id) : null;
+        $product = Product::with('images')->findOrFail($data['product_id']);
+
+        abort_unless($product->is_active, 404);
+
+        $variant = null;
+        if (! empty($data['variant_id'])) {
+            $variant = ProductVariant::with('inventoryLevels')->findOrFail($data['variant_id']);
+
+            // A variant id from another product would otherwise be accepted.
+            if ($variant->product_id !== $product->id) {
+                return back()->withErrors(['variant_id' => 'That option does not belong to this product.']);
+            }
+        }
 
         $cart = session()->get('cart', []);
         $cartKey = $variant ? "v_{$variant->id}" : "p_{$product->id}";
+        $alreadyInCart = $cart[$cartKey]['quantity'] ?? 0;
+        $requested = $alreadyInCart + $data['quantity'];
 
-        if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity'] += $request->quantity;
-        } else {
-            $cart[$cartKey] = [
-                'id' => $cartKey,
-                'product_id' => $product->id,
-                'variant_id' => $variant?->id,
-                'name' => $product->name . ($variant ? " - {$variant->name}" : ""),
-                'price_cents' => $product->price_cents,
-                'quantity' => $request->quantity,
-                'thumbnail_url' => $product->thumbnail_url,
-            ];
+        // Stock check counts what is already sitting in the cart.
+        if ($variant && $variant->track_inventory) {
+            $available = (int) $variant->inventoryLevels->sum('quantity');
+
+            if ($available < 1) {
+                return back()->withErrors(['quantity' => 'That option is sold out.']);
+            }
+
+            if ($requested > $available) {
+                return back()->withErrors([
+                    'quantity' => $alreadyInCart > 0
+                        ? "Only {$available} left, and you already have {$alreadyInCart} in your cart."
+                        : "Only {$available} left in stock.",
+                ]);
+            }
         }
+
+        // Variant pricing was previously dropped in favour of the base product price.
+        $priceCents = $variant?->price_cents ?: $product->price_cents;
+
+        $cart[$cartKey] = [
+            'id' => $cartKey,
+            'product_id' => $product->id,
+            'product_slug' => $product->slug,
+            'variant_id' => $variant?->id,
+            'name' => $product->name . ($variant && $variant->name ? " — {$variant->name}" : ''),
+            'price_cents' => $priceCents,
+            'quantity' => $requested,
+            'thumbnail_url' => $product->images->firstWhere('is_primary', true)?->url
+                ?? $product->images->first()?->url
+                ?? $product->thumbnail_url,
+        ];
 
         session()->put('cart', $cart);
 
-        return back()->with('success', 'Item added to archive.');
+        return back()->with('success', 'Added to your cart.');
     }
 
     public function update(Request $request)
     {
         $request->validate([
             'id' => 'required|string',
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:1|max:99',
         ]);
 
         $cart = session()->get('cart', []);
 
-        if (isset($cart[$request->id])) {
-            $cart[$request->id]['quantity'] = $request->quantity;
-            session()->put('cart', $cart);
+        if (! isset($cart[$request->id])) {
+            return back();
         }
+
+        $line = $cart[$request->id];
+        $quantity = (int) $request->quantity;
+
+        if ($line['variant_id']) {
+            $variant = ProductVariant::with('inventoryLevels')->find($line['variant_id']);
+
+            if ($variant && $variant->track_inventory) {
+                $available = (int) $variant->inventoryLevels->sum('quantity');
+
+                if ($quantity > $available) {
+                    return back()->withErrors(['quantity' => "Only {$available} left in stock."]);
+                }
+            }
+        }
+
+        $cart[$request->id]['quantity'] = $quantity;
+        session()->put('cart', $cart);
 
         return back();
     }
