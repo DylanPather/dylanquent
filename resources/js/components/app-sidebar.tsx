@@ -37,6 +37,8 @@ import {
     Wrench,
     UserCog,
     LockKeyhole,
+    Code2,
+    Inbox,
 } from 'lucide-react';
 
 import {
@@ -106,6 +108,15 @@ const MAIN_ITEMS: NavItem[] = [
             { title: 'Overview', href: '/dashboard', icon: Gauge },
             { title: 'Sales Snapshot', href: '/dashboard/sales', icon: BarChart3 },
             { title: 'Operations Health', href: '/dashboard/ops', icon: CheckCheck },
+        ],
+    },
+
+    // Studio (software division)
+    {
+        title: 'Studio',
+        icon: Code2,
+        items: [
+            { title: 'Project Inquiries', href: '/studio/inquiries', icon: Inbox },
         ],
     },
 

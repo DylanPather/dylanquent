@@ -74,6 +74,10 @@ class HandleInertiaRequests extends Middleware
                     'role' => $request->user()->getRoleNames()->first(), // Primary role for backward compatibility
                 ] : null,
             ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
             'alerts' => [
                 'low_stock' => $lowStock,
             ],
