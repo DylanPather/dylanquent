@@ -1,5 +1,4 @@
-// resources/js/Pages/Dashboard.jsx
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import {
@@ -21,7 +20,6 @@ import {
     AlertTriangle,
 } from 'lucide-react';
 
-// shadcn/ui
 import {
     Card,
     CardHeader,
@@ -50,30 +48,14 @@ import {
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 
-// --------- Breadcrumbs ----------
 const breadcrumbs = [{ title: 'Dashboard', href: '/dashboard' }];
 
-// --------- Stub Data (replace later) ----------
-const kpis = [
-    { label: 'Revenue (MTD)', value: 'R48,210', delta: '+8.2%', trend: 'up', icon: CreditCard },
-    { label: 'Orders', value: '1,286', delta: '+3.1%', trend: 'up', icon: ShoppingBag },
-    { label: 'Customers', value: '942', delta: '-1.4%', trend: 'down', icon: Users },
-    { label: 'Units in Stock', value: '12,430', delta: '+0.9%', trend: 'up', icon: Package },
-];
-
-const topProducts = [
-    { sku: 'TS-CLASSIC-BLK', name: 'Classic Tee — Black', category: 'Tops', price: 19.99, sold: 384 },
-    { sku: 'HDY-OVR-GRY', name: 'Oversized Hoodie — Grey', category: 'Outerwear', price: 49.0, sold: 271 },
-    { sku: 'JNS-SLIM-DB', name: 'Slim Jeans — Dark Blue', category: 'Bottoms', price: 59.0, sold: 192 },
-    { sku: 'CRW-NECK-WHT', name: 'Crewneck — White', category: 'Tops', price: 35.0, sold: 176 },
-];
-
-const recentOrders = [
-    { id: '#100245', customer: 'Alex Martin', items: 3, total: 89.97, status: 'Paid', date: '12 Aug 2025' },
-    { id: '#100244', customer: 'J. Patel', items: 1, total: 49.0, status: 'Pending', date: '12 Aug 2025' },
-    { id: '#100243', customer: 'M. Santos', items: 2, total: 78.99, status: 'Paid', date: '11 Aug 2025' },
-    { id: '#100242', customer: 'Taylor Chen', items: 4, total: 129.5, status: 'Refunded', date: '11 Aug 2025' },
-];
+const iconMap = {
+    CreditCard,
+    ShoppingBag,
+    Users,
+    Package,
+};
 
 const quickActions = [
     { label: 'Open Point of Sale', href: '/sales/pos' },
@@ -270,11 +252,11 @@ const MotionCard = ({ children, className = '', ...rest }) => (
     </motion.div>
 );
 
-// --------- Page ----------
 export default function Dashboard() {
-    // Scroll progress bar
-    const { scrollYProgress } = useScroll();
-    const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 20, mass: 0.2 });
+    const { kpis: kpisData, topProducts, recentOrders, lowStock, period } = usePage().props as any;
+
+    const scrollYProgress = useScroll();
+    const progress = useSpring(scrollYProgress.scrollYProgress, { stiffness: 120, damping: 20, mass: 0.2 });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -346,35 +328,38 @@ export default function Dashboard() {
 
                 {/* KPI Row */}
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {kpis.map((kpi, idx) => (
-                        <motion.div key={kpi.label} custom={idx} variants={fadeUp}>
-                            <motion.div variants={cardHover} initial="rest" whileHover="hover" animate="rest">
-                                <Card className="rounded-xl">
-                                    <CardContent className="p-4">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
-                                                <motion.p
-                                                    className="mt-2 text-2xl font-semibold"
-                                                    initial={{ opacity: 0, y: 4 }}
-                                                    whileInView={{ opacity: 1, y: 0 }}
-                                                    viewport={{ once: true }}
-                                                    transition={{ duration: 0.4 }}
-                                                >
-                                                    {kpi.value}
-                                                </motion.p>
+                    {kpisData?.map((kpi: any, idx: number) => {
+                        const IconComponent = iconMap[kpi.icon as keyof typeof iconMap] || Package;
+                        return (
+                            <motion.div key={kpi.label} custom={idx} variants={fadeUp}>
+                                <motion.div variants={cardHover} initial="rest" whileHover="hover" animate="rest">
+                                    <Card className="rounded-xl">
+                                        <CardContent className="p-4">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
+                                                    <motion.p
+                                                        className="mt-2 text-2xl font-semibold"
+                                                        initial={{ opacity: 0, y: 4 }}
+                                                        whileInView={{ opacity: 1, y: 0 }}
+                                                        viewport={{ once: true }}
+                                                        transition={{ duration: 0.4 }}
+                                                    >
+                                                        {kpi.value}
+                                                    </motion.p>
+                                                </div>
+                                                <div className="rounded-md border bg-card p-2">
+                                                    <IconComponent className="size-5 text-muted-foreground" />
+                                                </div>
                                             </div>
-                                            <div className="rounded-md border bg-card p-2">
-                                                <kpi.icon className="size-5 text-muted-foreground" />
-                                            </div>
-                                        </div>
-                                        <TrendPill trend={kpi.trend} delta={kpi.delta} />
-                                        <SparkBars />
-                                    </CardContent>
-                                </Card>
+                                            <TrendPill trend={kpi.trend} delta={kpi.delta} />
+                                            <SparkBars />
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
                             </motion.div>
-                        </motion.div>
-                    ))}
+                        );
+                    })}
                 </section>
 
                 {/* Tabs: Overview / Sales / Inventory */}
@@ -428,35 +413,41 @@ export default function Dashboard() {
                             {/* Top Products */}
                             <MotionCard>
                                 <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle className="text-sm">Top Products (30 days)</CardTitle>
+                                    <CardTitle className="text-sm">Top Products</CardTitle>
                                     <a href="/products" className="text-xs text-muted-foreground underline-offset-2 hover:underline">
                                         View all
                                     </a>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <ul className="divide-y">
-                                        {topProducts.map((p, i) => (
-                                            <motion.li
-                                                key={p.sku}
-                                                className="flex items-center justify-between px-4 py-3"
-                                                initial={{ opacity: 0, y: 6 }}
-                                                whileInView={{ opacity: 1, y: 0 }}
-                                                viewport={{ once: true }}
-                                                transition={{ duration: 0.35, delay: i * 0.05 }}
-                                            >
-                                                <div className="min-w-0">
-                                                    <p className="truncate text-sm font-medium">{p.name}</p>
-                                                    <p className="truncate text-xs text-muted-foreground">
-                                                        {p.category} • {p.sku}
-                                                    </p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-sm font-semibold">R{p.price.toFixed(2)}</p>
-                                                    <p className="text-xs text-muted-foreground">{p.sold} sold</p>
-                                                </div>
-                                            </motion.li>
-                                        ))}
-                                    </ul>
+                                    {topProducts && topProducts.length > 0 ? (
+                                        <ul className="divide-y">
+                                            {topProducts.map((p: any, i: number) => (
+                                                <motion.li
+                                                    key={p.sku}
+                                                    className="flex items-center justify-between px-4 py-3"
+                                                    initial={{ opacity: 0, y: 6 }}
+                                                    whileInView={{ opacity: 1, y: 0 }}
+                                                    viewport={{ once: true }}
+                                                    transition={{ duration: 0.35, delay: i * 0.05 }}
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm font-medium">{p.name}</p>
+                                                        <p className="truncate text-xs text-muted-foreground">
+                                                            {p.category} • {p.sku}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-sm font-semibold">R{p.price.toFixed(2)}</p>
+                                                        <p className="text-xs text-muted-foreground">{p.sold} sold</p>
+                                                    </div>
+                                                </motion.li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                                            No products sold yet
+                                        </div>
+                                    )}
                                 </CardContent>
                             </MotionCard>
 
@@ -464,65 +455,75 @@ export default function Dashboard() {
                             <MotionCard>
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle className="text-sm">Recent Orders</CardTitle>
-                                    <a href="/orders" className="text-xs text-muted-foreground underline-offset-2 hover:underline">
+                                    <a href="/sales/orders" className="text-xs text-muted-foreground underline-offset-2 hover:underline">
                                         View all
                                     </a>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="max-h-[360px] overflow-auto">
-                                        <table className="min-w-full text-left">
-                                            <thead className="sticky top-0 bg-card text-xs text-muted-foreground">
-                                                <tr>
-                                                    <th className="px-4 py-3 font-medium">Order</th>
-                                                    <th className="px-4 py-3 font-medium">Customer</th>
-                                                    <th className="px-4 py-3 font-medium">Items</th>
-                                                    <th className="px-4 py-3 font-medium">Total</th>
-                                                    <th className="px-4 py-3 font-medium">Status</th>
-                                                    <th className="px-4 py-3 font-medium">Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y text-sm">
-                                                {recentOrders.map((o, i) => (
-                                                    <motion.tr
-                                                        key={o.id}
-                                                        className="hover:bg-muted/40"
-                                                        initial={{ opacity: 0, y: 8 }}
-                                                        whileInView={{ opacity: 1, y: 0 }}
-                                                        viewport={{ once: true }}
-                                                        transition={{ duration: 0.35, delay: i * 0.04 }}
-                                                    >
-                                                        <td className="px-4 py-3">
-                                                            <a
-                                                                className="font-medium underline-offset-2 hover:underline"
-                                                                href={`/orders/${o.id.replace('#', '')}`}
-                                                            >
-                                                                {o.id}
-                                                            </a>
-                                                        </td>
-                                                        <td className="px-4 py-3">{o.customer}</td>
-                                                        <td className="px-4 py-3">{o.items}</td>
-                                                        <td className="px-4 py-3">R{o.total.toFixed(2)}</td>
-                                                        <td className="px-4 py-3">
-                                                            <span
-                                                                className={
-                                                                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ' +
-                                                                    (o.status === 'Paid'
-                                                                        ? 'bg-emerald-50 text-emerald-700'
-                                                                        : o.status === 'Pending'
-                                                                            ? 'bg-amber-50 text-amber-700'
-                                                                            : 'bg-rose-50 text-rose-700')
-                                                                }
-                                                            >
-                                                                <span className="size-1.5 rounded-full bg-current/70" />
-                                                                {o.status}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-3">{o.date}</td>
-                                                    </motion.tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    {recentOrders && recentOrders.length > 0 ? (
+                                        <div className="max-h-[360px] overflow-auto">
+                                            <table className="min-w-full text-left">
+                                                <thead className="sticky top-0 bg-card text-xs text-muted-foreground">
+                                                    <tr>
+                                                        <th className="px-4 py-3 font-medium">Order</th>
+                                                        <th className="px-4 py-3 font-medium">Customer</th>
+                                                        <th className="px-4 py-3 font-medium">Items</th>
+                                                        <th className="px-4 py-3 font-medium">Total</th>
+                                                        <th className="px-4 py-3 font-medium">Status</th>
+                                                        <th className="px-4 py-3 font-medium">Date</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y text-sm">
+                                                    {recentOrders.map((o: any, i: number) => (
+                                                        <motion.tr
+                                                            key={o.id}
+                                                            className="hover:bg-muted/40"
+                                                            initial={{ opacity: 0, y: 8 }}
+                                                            whileInView={{ opacity: 1, y: 0 }}
+                                                            viewport={{ once: true }}
+                                                            transition={{ duration: 0.35, delay: i * 0.04 }}
+                                                        >
+                                                            <td className="px-4 py-3">
+                                                                <a
+                                                                    className="font-medium underline-offset-2 hover:underline"
+                                                                    href={`/sales/orders/${o.id.replace('#', '')}`}
+                                                                >
+                                                                    {o.id}
+                                                                </a>
+                                                            </td>
+                                                            <td className="px-4 py-3">{o.customer}</td>
+                                                            <td className="px-4 py-3">{o.items}</td>
+                                                            <td className="px-4 py-3">R{o.total.toFixed(2)}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span
+                                                                    className={
+                                                                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ' +
+                                                                        (o.status === 'Paid'
+                                                                            ? 'bg-emerald-50 text-emerald-700'
+                                                                            : o.status === 'Pending'
+                                                                                ? 'bg-amber-50 text-amber-700'
+                                                                                : o.status === 'Shipped'
+                                                                                    ? 'bg-blue-50 text-blue-700'
+                                                                                    : o.status === 'Delivered'
+                                                                                        ? 'bg-emerald-50 text-emerald-700'
+                                                                                        : 'bg-rose-50 text-rose-700')
+                                                                    }
+                                                                >
+                                                                    <span className="size-1.5 rounded-full bg-current/70" />
+                                                                    {o.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3">{o.date}</td>
+                                                        </motion.tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                                            No orders yet
+                                        </div>
+                                    )}
                                 </CardContent>
                             </MotionCard>
 
@@ -726,26 +727,34 @@ export default function Dashboard() {
                                     <CardDescription>Reorder recommended</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    {lowStock.map((item, i) => (
-                                        <motion.div
-                                            key={item.sku}
-                                            className="flex items-center justify-between rounded-md border bg-card px-3 py-2"
-                                            initial={{ opacity: 0, y: 6 }}
-                                            whileInView={{ opacity: 1, y: 0 }}
-                                            viewport={{ once: true }}
-                                            transition={{ duration: 0.3, delay: i * 0.05 }}
-                                        >
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm">{item.name}</p>
-                                                <p className="truncate text-xs text-muted-foreground">{item.sku}</p>
-                                            </div>
-                                            <Badge variant="secondary">Stock: {item.stock}</Badge>
-                                        </motion.div>
-                                    ))}
+                                    {lowStock && lowStock.length > 0 ? (
+                                        lowStock.map((item: any, i: number) => (
+                                            <motion.div
+                                                key={item.sku}
+                                                className="flex items-center justify-between rounded-md border bg-card px-3 py-2"
+                                                initial={{ opacity: 0, y: 6 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                viewport={{ once: true }}
+                                                transition={{ duration: 0.3, delay: i * 0.05 }}
+                                            >
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm">{item.name}</p>
+                                                    <p className="truncate text-xs text-muted-foreground">{item.sku}</p>
+                                                </div>
+                                                <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">Stock: {item.stock}</Badge>
+                                            </motion.div>
+                                        ))
+                                    ) : (
+                                        <div className="py-8 text-center text-sm text-muted-foreground">
+                                            No low stock alerts
+                                        </div>
+                                    )}
                                 </CardContent>
-                                <CardFooter className="justify-end">
-                                    <Button variant="outline">Generate PO</Button>
-                                </CardFooter>
+                                {lowStock && lowStock.length > 0 && (
+                                    <CardFooter className="justify-end">
+                                        <Button variant="outline">Generate PO</Button>
+                                    </CardFooter>
+                                )}
                             </MotionCard>
 
                             <MotionCard>

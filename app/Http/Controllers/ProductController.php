@@ -12,11 +12,44 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $products = Product::query()
-            ->latest()
-            ->paginate(12)
+        $query = Product::query();
+
+        // Search by name, SKU, or slug
+        if ($request->has('search') && $request->search) {
+            $search = '%' . $request->search . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', $search)
+                    ->orWhere('sku', 'like', $search)
+                    ->orWhere('slug', 'like', $search);
+            });
+        }
+
+        // Filter by status
+        if ($request->has('status') && $request->status) {
+            $query->where('is_active', $request->status === 'active');
+        }
+
+        // Filter by stock level
+        if ($request->has('stock_status') && $request->stock_status) {
+            match ($request->stock_status) {
+                'in_stock' => $query->where('stock_quantity', '>', 0),
+                'low_stock' => $query->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+                    ->where('low_stock_threshold', '>', 0),
+                'out_of_stock' => $query->where('stock_quantity', '=', 0),
+                default => null,
+            };
+        }
+
+        // Sorting
+        $sort = $request->get('sort', '-created_at');
+        $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
+        $sortField = ltrim($sort, '-');
+        $query->orderBy($sortField, $direction);
+
+        $products = $query
+            ->paginate(15)
             ->through(function (Product $p) {
                 return [
                     'id' => $p->id,
@@ -26,16 +59,38 @@ class ProductController extends Controller
                     'price_cents' => $p->price_cents,
                     'currency' => $p->currency,
                     'stock_quantity' => $p->stock_quantity,
+                    'low_stock_threshold' => $p->low_stock_threshold,
                     'is_active' => $p->is_active,
                     'created_at' => $p->created_at?->toDateTimeString(),
                 ];
             });
+
+        // Calculate stats
+        $totalProducts = Product::count();
+        $activeProducts = Product::where('is_active', true)->count();
+        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+            ->where('low_stock_threshold', '>', 0)->count();
+        $outOfStockProducts = Product::where('stock_quantity', 0)->count();
+        $totalStock = Product::sum('stock_quantity');
 
         $categories = \App\Models\Category::all(['id', 'name']);
 
         return Inertia::render('products/index', [
             'products' => $products,
             'categories' => $categories,
+            'stats' => [
+                'total' => $totalProducts,
+                'active' => $activeProducts,
+                'low_stock' => $lowStockProducts,
+                'out_of_stock' => $outOfStockProducts,
+                'total_stock' => $totalStock,
+            ],
+            'filters' => [
+                'search' => $request->get('search', ''),
+                'status' => $request->get('status', ''),
+                'stock_status' => $request->get('stock_status', ''),
+                'sort' => $request->get('sort', '-created_at'),
+            ],
         ]);
     }
 
