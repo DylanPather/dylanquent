@@ -55,5 +55,42 @@ return [
 
         // Free delivery from R1000. Set 0 to disable the threshold.
         'free_over_cents' => (int) env('STORE_SHIPPING_FREE_OVER_CENTS', 100000),
+
+        /*
+         | Live rates from Bob Go, which aggregates The Courier Guy, Pargo,
+         | RAM, SkyNet, Aramex and others behind one API.
+         |
+         | Leave disabled until a sandbox key is in place. When it fails or
+         | times out the configured flat rates above are used instead, so a
+         | courier outage can never block checkout.
+         */
+        'bobgo' => [
+            'enabled' => (bool) env('BOBGO_ENABLED', false),
+            'sandbox' => (bool) env('BOBGO_SANDBOX', true),
+            'token' => env('BOBGO_TOKEN'),
+            'timeout' => (int) env('BOBGO_TIMEOUT', 6),
+
+            // Where parcels are sent from.
+            'origin' => [
+                'company' => env('BOBGO_ORIGIN_COMPANY', 'Dylanquent'),
+                'street_address' => env('BOBGO_ORIGIN_STREET'),
+                'local_area' => env('BOBGO_ORIGIN_SUBURB'),
+                'city' => env('BOBGO_ORIGIN_CITY', 'Johannesburg'),
+                'zone' => env('BOBGO_ORIGIN_PROVINCE', 'Gauteng'),
+                'code' => env('BOBGO_ORIGIN_POSTCODE'),
+                'country' => 'ZA',
+            ],
+
+            /*
+             | Fallback parcel used until per-product dimensions exist.
+             | Under-declaring gets a quote the courier will not honour.
+             */
+            'default_parcel' => [
+                'length_cm' => (int) env('BOBGO_PARCEL_LENGTH', 30),
+                'width_cm' => (int) env('BOBGO_PARCEL_WIDTH', 25),
+                'height_cm' => (int) env('BOBGO_PARCEL_HEIGHT', 10),
+                'weight_kg' => (float) env('BOBGO_PARCEL_WEIGHT', 1.0),
+            ],
+        ],
     ],
 ];

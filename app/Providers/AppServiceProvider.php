@@ -11,11 +11,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Swap this binding for a courier-API provider when live rates are wired.
-        $this->app->bind(
-            \App\Services\Shipping\ShippingRateProvider::class,
-            \App\Services\Shipping\ConfiguredRateProvider::class,
-        );
+        // Live courier rates when Bob Go is configured, flat rates otherwise.
+        // BobGoRateProvider falls back to the configured rates on any failure,
+        // so checkout keeps working through a courier outage.
+        $this->app->bind(\App\Services\Shipping\ShippingRateProvider::class, function ($app) {
+            $bobgo = config('store.shipping.bobgo');
+
+            if (($bobgo['enabled'] ?? false) && ! empty($bobgo['token'])) {
+                return new \App\Services\Shipping\BobGoRateProvider(
+                    $app->make(\App\Services\Shipping\ConfiguredRateProvider::class)
+                );
+            }
+
+            return $app->make(\App\Services\Shipping\ConfiguredRateProvider::class);
+        });
 
         $this->app->singleton(\App\Services\PaymentGateway\PaymentProcessor::class, function ($app) {
             return new \App\Services\PaymentGateway\PaymentProcessor();
