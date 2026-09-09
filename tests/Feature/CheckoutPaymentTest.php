@@ -59,7 +59,8 @@ it('prices the order from the database, not the cart snapshot', function () {
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
-    expect(Order::first()->total_cents)->toBe(19800);
+    // Asserts the subtotal: the total also carries shipping.
+    expect(Order::first()->subtotal_cents)->toBe(19800);
 });
 
 it('refuses checkout when stock ran out after adding to cart', function () {
@@ -92,4 +93,45 @@ it('rejects confirming an order that belongs to someone else', function () {
     $this->actingAs(User::factory()->create())
         ->postJson('/payment/confirm', ['order_id' => $order->id, 'payment_id' => 'pi_test'])
         ->assertStatus(403);
+});
+
+it('writes shipping into the order total', function () {
+    config(['store.shipping.flat_cents' => 8000, 'store.shipping.free_over_cents' => 100000]);
+    [$product, $variant] = shopFixture(10, 4500);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post('/cart/add', ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 2]);
+
+    $this->actingAs($user)->post('/checkout', [
+        'shipping_address' => ['line1' => '1 Main Rd'],
+        'billing_address' => ['line1' => '1 Main Rd'],
+    ]);
+
+    $order = Order::first();
+
+    expect($order->subtotal_cents)->toBe(9000)
+        ->and($order->shipping_total_cents)->toBe(8000)
+        ->and($order->tax_total_cents)->toBe(0)      // not VAT registered
+        ->and($order->total_cents)->toBe(17000);     // R170
+});
+
+it('drops shipping from the order above the threshold', function () {
+    config(['store.shipping.flat_cents' => 8000, 'store.shipping.free_over_cents' => 100000]);
+    [$product, $variant] = shopFixture(50, 50000);   // R500 each
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post('/cart/add', ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 2]);
+
+    $this->actingAs($user)->post('/checkout', [
+        'shipping_address' => ['line1' => '1 Main Rd'],
+        'billing_address' => ['line1' => '1 Main Rd'],
+    ]);
+
+    $order = Order::first();
+
+    expect($order->subtotal_cents)->toBe(100000)
+        ->and($order->shipping_total_cents)->toBe(0)
+        ->and($order->total_cents)->toBe(100000);
 });

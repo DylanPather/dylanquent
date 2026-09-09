@@ -7,15 +7,18 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Services\Pricing\PricingService;
 
 class CartController extends Controller
 {
     public function index()
     {
         $cart = session()->get('cart', []);
+        $subtotal = collect($cart)->sum(fn ($i) => $i['price_cents'] * $i['quantity']);
 
         return Inertia::render('cart/index', [
-            'cart' => $cart
+            'cart' => $cart,
+            'totals' => app(PricingService::class)->forSubtotal($subtotal)->toArray(),
         ]);
     }
 

@@ -4,13 +4,27 @@ import { motion } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 import React from 'react';
 
-interface Props {
-    cart: Record<string, any>;
+interface Totals {
+    subtotal_cents: number;
+    shipping_cents: number;
+    tax_cents: number;
+    total_cents: number;
+    tax_inclusive: boolean;
+    tax_label: string;
+    free_shipping_remaining_cents: number | null;
 }
 
-export default function Index({ cart }: Props) {
+interface Props {
+    cart: Record<string, any>;
+    totals: Totals;
+}
+
+const money = (cents: number) => 'R' + (cents / 100).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+export default function Index({ cart, totals }: Props) {
     const cartItems = Object.values(cart);
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.price_cents * item.quantity), 0);
+    // Totals come from the server so the figure shown is the figure charged.
+    const subtotal = totals?.subtotal_cents ?? 0;
 
     return (
         <StorefrontLayout title="Your Archive">
@@ -33,16 +47,32 @@ export default function Index({ cart }: Props) {
                                 <div className="space-y-4 md:space-y-6 mb-6 md:mb-10">
                                     <div className="flex justify-between text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] copy-muted">
                                         <span>Subtotal</span>
-                                        <span>R{(subtotal / 100).toFixed(2)}</span>
+                                        <span>{money(subtotal)}</span>
                                     </div>
+
                                     <div className="flex justify-between text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] copy-muted">
-                                        <span>Acquisition Tax</span>
-                                        <span>Calculated at checkout</span>
+                                        <span>Delivery</span>
+                                        <span>{totals.shipping_cents === 0 ? 'Free' : money(totals.shipping_cents)}</span>
                                     </div>
+
+                                    {totals.free_shipping_remaining_cents !== null && (
+                                        <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-emerald-600 dark:text-emerald-500">
+                                            {money(totals.free_shipping_remaining_cents)} more for free delivery
+                                        </p>
+                                    )}
+
                                     <div className="pt-4 md:pt-6 border-t border-border flex justify-between items-end">
                                         <span className="text-sm font-black uppercase tracking-[0.1em]">Total</span>
-                                        <span className="text-2xl md:text-3xl font-light">R{(subtotal / 100).toFixed(2)}</span>
+                                        <span className="text-2xl md:text-3xl font-light">{money(totals.total_cents)}</span>
                                     </div>
+
+                                    {totals.tax_cents > 0 && (
+                                        <p className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">
+                                            {totals.tax_inclusive
+                                                ? `Includes ${totals.tax_label} ${money(totals.tax_cents)}`
+                                                : `${totals.tax_label} ${money(totals.tax_cents)}`}
+                                        </p>
+                                    )}
                                 </div>
                                 <Link
                                     href={route('checkout.index')}
@@ -51,7 +81,7 @@ export default function Index({ cart }: Props) {
                                     Proceed to Checkout
                                     <ArrowRight className="size-4 group-hover:translate-x-2 transition-transform" />
                                 </Link>
-                                <p className="mt-4 md:mt-6 text-[7px] md:text-[12px] text-center uppercase font-bold tracking-[0.1em] copy-muted">
+                                <p className="mt-4 md:mt-6 text-[11px] md:text-[12px] text-center uppercase font-bold tracking-[0.1em] copy-muted">
                                     Secure verification required for high-fidelity pieces.
                                 </p>
                             </div>

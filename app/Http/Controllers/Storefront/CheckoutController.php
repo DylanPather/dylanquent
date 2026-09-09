@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Services\Pricing\PricingService;
 
 class CheckoutController extends Controller
 {
@@ -26,9 +27,12 @@ class CheckoutController extends Controller
 
         $customer = auth()->user()->customer;
 
+        $subtotal = collect($cart)->sum(fn ($i) => $i['price_cents'] * $i['quantity']);
+
         return Inertia::render('checkout/index', [
             'cart' => $cart,
-            'customer' => $customer
+            'customer' => $customer,
+            'totals' => app(PricingService::class)->forSubtotal($subtotal)->toArray(),
         ]);
     }
 
@@ -106,17 +110,17 @@ class CheckoutController extends Controller
                 ];
             }
 
+            $totals = app(PricingService::class)->forSubtotal($subtotal);
+
             $order = Order::create([
                 'order_number' => 'ORD-'.strtoupper(Str::random(10)),
                 'customer_id' => $customer->id,
                 'status' => 'pending',
                 'payment_status' => 'pending',
-                'subtotal_cents' => $subtotal,
-                // Tax and shipping are not calculated yet, so the total is the
-                // subtotal. Both must be added before charging real customers.
-                'tax_total_cents' => 0,
-                'shipping_total_cents' => 0,
-                'total_cents' => $subtotal,
+                'subtotal_cents' => $totals->subtotalCents,
+                'tax_total_cents' => $totals->taxCents,
+                'shipping_total_cents' => $totals->shippingCents,
+                'total_cents' => $totals->totalCents,
                 'currency' => config('store.currency'),
                 'shipping_address' => $request->shipping_address,
                 'billing_address' => $request->billing_address,
