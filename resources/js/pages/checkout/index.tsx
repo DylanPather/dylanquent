@@ -1,19 +1,42 @@
 import StorefrontLayout from '../../layouts/storefront-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Truck, CreditCard, ChevronRight } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+
+interface ShippingRate {
+    method: string;
+    label: string;
+    description: string;
+    cents: number;
+    free: boolean;
+}
+
+interface Totals {
+    subtotal_cents: number;
+    shipping_cents: number;
+    tax_cents: number;
+    total_cents: number;
+    tax_inclusive: boolean;
+    tax_label: string;
+}
 
 interface Props {
     cart: Record<string, any>;
     customer: any;
+    totals: Totals;
+    shippingRates: ShippingRate[];
+    shippingTotals: Record<string, Totals>;
 }
 
-export default function Index({ cart, customer }: Props) {
+const money = (cents: number) => 'R' + (cents / 100).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+export default function Index({ cart, customer, totals, shippingRates, shippingTotals }: Props) {
     const cartItems = Object.values(cart);
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.price_cents * item.quantity), 0);
+    const subtotal = totals?.subtotal_cents ?? 0;
 
     const { data, setData, post, processing, errors } = useForm({
+        shipping_method: '',
         shipping_address: customer?.shipping_address || {
             address: '',
             city: '',
@@ -27,6 +50,40 @@ export default function Index({ cart, customer }: Props) {
             country: 'South Africa',
         },
     });
+
+    const [quoting, setQuoting] = useState(false);
+    const postcode = data.shipping_address.postal_code;
+    const debounce = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+    // Re-quote delivery whenever the postal code settles. Couriers price on
+    // destination, so there is nothing to ask them until this is filled in.
+    useEffect(() => {
+        clearTimeout(debounce.current);
+
+        if (!postcode || postcode.length < 4) return;
+
+        debounce.current = setTimeout(() => {
+            router.reload({
+                only: ['shippingRates', 'shippingTotals'],
+                data: { postal_code: postcode },
+                onStart: () => setQuoting(true),
+                onFinish: () => setQuoting(false),
+            });
+        }, 500);
+
+        return () => clearTimeout(debounce.current);
+    }, [postcode]);
+
+    // Default to the cheapest option as soon as quotes arrive.
+    useEffect(() => {
+        if (shippingRates?.length && !shippingRates.some((r) => r.method === data.shipping_method)) {
+            setData('shipping_method', shippingRates[0].method);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shippingRates]);
+
+    // Server-computed totals for the chosen option; falls back before quoting.
+    const active: Totals = shippingTotals?.[data.shipping_method] ?? totals;
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -82,10 +139,66 @@ export default function Index({ cart, customer }: Props) {
                             </div>
                         </section>
 
-                        {/* Payment Draft */}
                         <section>
                             <div className="flex items-center gap-4 mb-10 pb-6 border-b border-border">
                                 <div className="size-10 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-black italic">2</div>
+                                <h2 className="text-2xl font-black uppercase tracking-tighter italic">Delivery</h2>
+                            </div>
+
+                            {!postcode || postcode.length < 4 ? (
+                                <p className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">
+                                    Enter your postal code above to see delivery options and pricing.
+                                </p>
+                            ) : quoting ? (
+                                <p className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">
+                                    Getting courier rates…
+                                </p>
+                            ) : shippingRates?.length ? (
+                                <div className="space-y-3">
+                                    {shippingRates.map((rate) => (
+                                        <label
+                                            key={rate.method}
+                                            className={`flex cursor-pointer items-start gap-4 rounded-2xl border p-5 transition-colors ${
+                                                data.shipping_method === rate.method ? 'border-foreground' : 'border-border hover:border-foreground/40'
+                                            }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="shipping_method"
+                                                value={rate.method}
+                                                checked={data.shipping_method === rate.method}
+                                                onChange={() => setData('shipping_method', rate.method)}
+                                                className="mt-1"
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                                <span className="flex justify-between gap-3 text-[13px] font-black uppercase tracking-[0.1em]">
+                                                    <span>{rate.label}</span>
+                                                    <span>{rate.free ? 'Free' : money(rate.cents)}</span>
+                                                </span>
+                                                {rate.description && (
+                                                    <span className="mt-1 block text-[12px] font-light normal-case tracking-normal copy-muted">
+                                                        {rate.description}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-amber-600">
+                                    No delivery options found for that postal code. Please check it and try again.
+                                </p>
+                            )}
+
+                            {errors.shipping_method && (
+                                <p className="mt-3 text-[12px] font-bold uppercase tracking-[0.1em] text-red-600">{errors.shipping_method}</p>
+                            )}
+                        </section>
+
+                        {/* Payment Draft */}
+                        <section>
+                            <div className="flex items-center gap-4 mb-10 pb-6 border-b border-border">
+                                <div className="size-10 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-black italic">3</div>
                                 <h2 className="text-2xl font-black uppercase tracking-[0.1em]">Verification & Payment</h2>
                             </div>
                             <div className="p-10 rounded-[2.5rem] bg-zinc-50 dark:bg-zinc-950 border border-border flex flex-col items-center text-center gap-6">
@@ -95,6 +208,8 @@ export default function Index({ cart, customer }: Props) {
                                 </p>
                             </div>
                         </section>
+
+                        {/* Delivery */}
                     </div>
 
                     {/* Order Sidebar */}
@@ -115,16 +230,31 @@ export default function Index({ cart, customer }: Props) {
                             <div className="pt-8 border-t border-border space-y-4">
                                 <div className="flex justify-between text-xs font-black uppercase tracking-[0.1em] copy-muted">
                                     <span>Subtotal</span>
-                                    <span>R{(subtotal / 100).toFixed(2)}</span>
+                                    <span>{money(subtotal)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs font-black uppercase tracking-[0.1em] copy-muted">
-                                    <span>Shipping</span>
-                                    <span className="text-emerald-500">Complimentary</span>
+                                    <span>Delivery</span>
+                                    <span>
+                                        {!postcode || postcode.length < 4
+                                            ? 'Enter postal code'
+                                            : quoting
+                                              ? 'Quoting…'
+                                              : active.shipping_cents === 0
+                                                ? 'Free'
+                                                : money(active.shipping_cents)}
+                                    </span>
                                 </div>
                                 <div className="pt-6 border-t border-border flex justify-between items-end">
                                     <span className="text-sm font-black uppercase tracking-[0.1em]">Total</span>
-                                    <span className="text-3xl font-light">R{(subtotal / 100).toFixed(2)}</span>
+                                    <span className="text-3xl font-light">{money(active.total_cents)}</span>
                                 </div>
+                                {active.tax_cents > 0 && (
+                                    <p className="text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">
+                                        {active.tax_inclusive
+                                            ? `Includes ${active.tax_label} ${money(active.tax_cents)}`
+                                            : `${active.tax_label} ${money(active.tax_cents)}`}
+                                    </p>
+                                )}
                             </div>
 
                             <button
