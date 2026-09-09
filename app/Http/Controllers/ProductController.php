@@ -49,6 +49,7 @@ class ProductController extends Controller
         $query->orderBy($sortField, $direction);
 
         $products = $query
+            ->with('images')
             ->paginate(15)
             ->through(function (Product $p) {
                 return [
@@ -62,6 +63,9 @@ class ProductController extends Controller
                     'low_stock_threshold' => $p->low_stock_threshold,
                     'is_active' => $p->is_active,
                     'created_at' => $p->created_at?->toDateTimeString(),
+                    'thumbnail_url' => $p->images->firstWhere('is_primary', true)?->url
+                        ?? $p->images->first()?->url
+                        ?? $p->thumbnail_url,
                 ];
             });
 
@@ -235,6 +239,22 @@ class ProductController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    /**
+     * Delete several products in one request. The UI previously looped
+     * over ids client-side, which raced and only tracked the last response.
+     */
+    public function destroyMany(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:products,id'],
+        ]);
+
+        $deleted = Product::whereIn('id', $data['ids'])->delete();
+
+        return back()->with('success', "{$deleted} product(s) deleted.");
+    }
+
     public function destroy(string $id)
     {
         $product = Product::findOrFail($id);

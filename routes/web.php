@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Catalog aliases (to match sidebar paths)
     Route::prefix('catalog')->name('catalog.')->group(function () {
+        Route::delete('products/bulk', [ProductController::class, 'destroyMany'])->name('products.bulk-destroy');
         Route::resource('products', ProductController::class)->names('products');
         Route::post('products/{product}/images', [\App\Http\Controllers\Catalog\ProductImageController::class, 'store'])->name('products.images.store');
         Route::put('images/{image}', [\App\Http\Controllers\Catalog\ProductImageController::class, 'update'])->name('images.update');

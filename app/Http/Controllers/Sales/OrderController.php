@@ -17,20 +17,63 @@ class OrderController extends Controller
         private ShippingService $shippingService
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $orders = Order::query()->latest()->paginate(15)->through(fn (Order $o) => [
+        $filters = [
+            'search' => trim((string) $request->get('search', '')),
+            'status' => (string) $request->get('status', ''),
+            'payment_status' => (string) $request->get('payment_status', ''),
+            'sort' => (string) $request->get('sort', '-created_at'),
+        ];
+
+        $query = Order::query()
+            // customer was resolved per row before, one query per order.
+            ->with('customer:id,name,email')
+            ->withCount('items');
+
+        if ($filters['search'] !== '') {
+            $term = '%'.$filters['search'].'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('order_number', 'like', $term)
+                    ->orWhereHas('customer', fn ($c) => $c->where('email', 'like', $term)->orWhere('name', 'like', $term));
+            });
+        }
+
+        if ($filters['status'] !== '') {
+            $query->where('status', $filters['status']);
+        }
+
+        if ($filters['payment_status'] !== '') {
+            $query->where('payment_status', $filters['payment_status']);
+        }
+
+        $direction = str_starts_with($filters['sort'], '-') ? 'desc' : 'asc';
+        $query->orderBy(ltrim($filters['sort'], '-'), $direction);
+
+        $orders = $query->paginate(20)->withQueryString()->through(fn (Order $o) => [
             'id' => $o->id,
             'order_number' => $o->order_number,
             'status' => $o->status,
+            'payment_status' => $o->payment_status,
             'total_cents' => $o->total_cents,
             'currency' => $o->currency,
-            'placed_at' => $o->placed_at?->toDateTimeString(),
+            'items_count' => $o->items_count,
+            'placed_at' => ($o->placed_at ?? $o->created_at)?->toDateString(),
+            'customer_name' => $o->customer?->name,
             'customer_email' => $o->customer?->email,
         ]);
 
         return Inertia::render('sales/orders/index', [
             'orders' => $orders,
+            'filters' => $filters,
+            'statuses' => ['pending', 'paid', 'fulfilled', 'cancelled', 'refunded', 'partially_refunded'],
+            'paymentStatuses' => ['pending', 'paid', 'failed', 'refunded'],
+            'stats' => [
+                'total' => Order::count(),
+                'awaiting_payment' => Order::where('payment_status', 'pending')->count(),
+                'to_fulfil' => Order::where('status', 'paid')->count(),
+                'revenue_cents' => (int) Order::where('payment_status', 'paid')->sum('total_cents'),
+            ],
         ]);
     }
 
