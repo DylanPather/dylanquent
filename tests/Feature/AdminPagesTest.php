@@ -23,7 +23,7 @@ dataset('admin pages', [
     '/marketing/email', '/marketing/sms', '/marketing/banners', '/marketing/affiliates',
     '/analytics/sales', '/analytics/products', '/analytics/customers', '/analytics/rfm-analysis',
     '/finance/reconciliation', '/finance/taxes', '/finance/expenses',
-    '/settings/store', '/settings/payments', '/settings/shipping',
+    '/settings/store', '/settings/shipping',
     '/settings/integrations', '/settings/security',
     '/system/users', '/system/storefront', '/system/health',
 ]);

@@ -265,7 +265,7 @@ const MAIN_ITEMS: NavItem[] = [
             { title: 'Store', href: '/settings/store', icon: Building2 },
             { title: 'Sales Channels', href: '/settings/channels', icon: Megaphone, planned: true },
             { title: 'Staff & Roles', href: '/settings/staff', icon: UserCog, planned: true },
-            { title: 'Payments', href: '/settings/payments', icon: CreditCard },
+            { title: 'Payments', href: '/settings/payments', icon: CreditCard, planned: true },
             { title: 'Shipping', href: '/settings/shipping', icon: Truck },
             { title: 'Integrations', href: '/settings/integrations', icon: Cable },
             { title: 'Locales & Currency', href: '/settings/locales', icon: Flag, planned: true },
