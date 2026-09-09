@@ -120,43 +120,107 @@ class BobGoRateProvider implements ShippingRateProvider
     /**
      * Map the API response onto our rate objects.
      *
-     * Written against the documented shape; verify with shipping:probe.
+     * Verified against the sandbox. Quotes are nested two levels deep:
+     * provider_rate_requests[] -> responses[], with one entry per courier
+     * per service level. Several couriers usually quote the same journey.
+     *
+     * rate_amount includes VAT; rate_amount_excl_vat does not. Dylanquent is
+     * not VAT registered and so cannot reclaim it — the inclusive figure is
+     * the real cost and the one passed on.
      *
      * @return array<int, ShippingRate>|null
      */
     private function toRates(mixed $body): ?array
     {
-        $rows = $body['rates'] ?? $body['data'] ?? null;
+        $requests = $body['provider_rate_requests'] ?? null;
 
-        if (! is_array($rows) || $rows === []) {
-            Log::warning('Bob Go returned no usable rates', ['keys' => array_keys((array) $body)]);
+        if (! is_array($requests)) {
+            Log::warning('Bob Go response missing provider_rate_requests', [
+                'keys' => array_keys((array) $body),
+            ]);
 
             return null;
         }
 
-        $rates = [];
+        $quotes = [];
 
-        foreach ($rows as $row) {
-            $amount = $row['rate'] ?? $row['charge'] ?? $row['total'] ?? null;
-
-            if ($amount === null) {
+        foreach ($requests as $request) {
+            if (($request['status'] ?? null) !== 'success') {
                 continue;
             }
 
-            $slug = (string) ($row['service_level']['code'] ?? $row['service_level_code'] ?? $row['provider_slug'] ?? 'courier');
+            foreach ($request['responses'] ?? [] as $response) {
+                if (($response['status'] ?? null) !== 'success') {
+                    continue;
+                }
 
-            $rates[] = new ShippingRate(
-                method: $slug,
-                label: (string) ($row['service_level']['name'] ?? $row['provider'] ?? 'Courier'),
-                description: (string) ($row['service_level']['description'] ?? ''),
-                // Bob Go quotes in Rand; we store cents.
-                cents: (int) round(((float) $amount) * 100),
-            );
+                $amount = $response['rate_amount'] ?? null;
+
+                if ($amount === null) {
+                    continue;
+                }
+
+                $level = $response['service_level'] ?? [];
+
+                $quotes[] = [
+                    // Groups door-to-door and locker quotes separately so the
+                    // customer chooses a delivery style, not a courier.
+                    'type' => (string) ($level['delivery_type'] ?? 'door'),
+                    'provider' => (string) ($request['provider_name'] ?? $request['provider_slug'] ?? 'Courier'),
+                    'name' => (string) ($level['name'] ?? $response['service_level_code'] ?? 'Delivery'),
+                    'description' => (string) ($level['description'] ?? ''),
+                    'cents' => (int) round(((float) $amount) * 100),
+                ];
+            }
         }
+
+        if ($quotes === []) {
+            $failures = collect($requests)
+                ->filter(fn ($r) => ($r['status'] ?? null) !== 'success')
+                ->pluck('failed_reason', 'provider_slug')
+                ->all();
+
+            Log::warning('Bob Go returned no successful quotes', ['failures' => $failures]);
+
+            return null;
+        }
+
+        // Cheapest courier wins within each delivery style.
+        $best = [];
+
+        foreach ($quotes as $quote) {
+            $type = $quote['type'];
+
+            if (! isset($best[$type]) || $quote['cents'] < $best[$type]['cents']) {
+                $best[$type] = $quote;
+            }
+        }
+
+        $rates = array_map(
+            fn (array $q) => new ShippingRate(
+                method: $q['type'],
+                label: $this->labelFor($q['type'], $q['provider']),
+                description: $q['description'],
+                cents: $q['cents'],
+            ),
+            array_values($best),
+        );
 
         usort($rates, fn ($a, $b) => $a->cents <=> $b->cents);
 
-        return $rates ?: null;
+        return $rates;
+    }
+
+    private function labelFor(string $type, string $provider): string
+    {
+        $style = match ($type) {
+            'locker' => 'Locker collection',
+            'pickup_point' => 'Collection point',
+            'door' => 'Door-to-door courier',
+            default => ucfirst(str_replace('_', ' ', $type)),
+        };
+
+        return "{$style} ({$provider})";
     }
 
     private function qualifiesForFree(int $subtotalCents): bool

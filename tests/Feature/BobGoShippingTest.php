@@ -31,17 +31,24 @@ it('points at the sandbox by default, never production', function () {
 
 it('returns live rates cheapest first', function () {
     enableBobGo();
-    Http::fake(['*/rates' => Http::response(['rates' => [
-        ['rate' => 110.00, 'service_level' => ['code' => 'ECO', 'name' => 'Economy']],
-        ['rate' => 65.50, 'service_level' => ['code' => 'LOCKER', 'name' => 'Locker']],
+    Http::fake(['*/rates' => Http::response(['provider_rate_requests' => [
+        ['provider_slug' => 'tcg', 'provider_name' => 'The Courier Guy', 'status' => 'success', 'responses' => [
+            ['status' => 'success', 'rate_amount' => 114.10, 'rate_amount_excl_vat' => 99.22,
+             'service_level' => ['code' => 'ECO', 'name' => 'Economy', 'delivery_type' => 'door']],
+        ]],
+        ['provider_slug' => 'pudo', 'provider_name' => 'PUDO', 'status' => 'success', 'responses' => [
+            ['status' => 'success', 'rate_amount' => 65.50, 'rate_amount_excl_vat' => 56.96,
+             'service_level' => ['code' => 'LOC', 'name' => 'Locker', 'delivery_type' => 'locker']],
+        ]],
     ]])]);
 
     $rates = bobgo()->ratesFor(13000, '2000');
 
     expect($rates)->toHaveCount(2)
         ->and($rates[0]->cents)->toBe(6550)      // cheapest first
-        ->and($rates[0]->method)->toBe('LOCKER')
-        ->and($rates[1]->cents)->toBe(11000);
+        ->and($rates[0]->method)->toBe('locker')
+        // VAT-inclusive amount, since we cannot reclaim the VAT
+        ->and($rates[1]->cents)->toBe(11410);
 });
 
 it('falls back to flat rates when Bob Go errors', function () {
@@ -63,7 +70,7 @@ it('falls back when Bob Go times out', function () {
 
 it('falls back when Bob Go returns no rates', function () {
     enableBobGo();
-    Http::fake(['*/rates' => Http::response(['rates' => []])]);
+    Http::fake(['*/rates' => Http::response(['provider_rate_requests' => []])]);
 
     expect(collect(bobgo()->ratesFor(13000, '2000'))->pluck('method')->all())->toBe(['locker', 'door']);
 });
@@ -76,4 +83,38 @@ it('does not call the courier once free delivery applies', function () {
 
     Http::assertNothingSent();
     expect(collect($rates)->every(fn ($r) => $r->cents === 0))->toBeTrue();
+});
+
+it('keeps the cheapest courier for each delivery style', function () {
+    enableBobGo();
+    // Several couriers quote the same journey; the customer should not have
+    // to choose between six near-identical door-to-door options.
+    Http::fake(['*/rates' => Http::response(['provider_rate_requests' => [
+        ['provider_slug' => 'a', 'provider_name' => 'Courier A', 'status' => 'success', 'responses' => [
+            ['status' => 'success', 'rate_amount' => 129.00, 'service_level' => ['name' => 'Economy', 'delivery_type' => 'door']],
+        ]],
+        ['provider_slug' => 'b', 'provider_name' => 'Courier B', 'status' => 'success', 'responses' => [
+            ['status' => 'success', 'rate_amount' => 114.10, 'service_level' => ['name' => 'Economy', 'delivery_type' => 'door']],
+        ]],
+    ]])]);
+
+    $rates = bobgo()->ratesFor(13000, '2000');
+
+    expect($rates)->toHaveCount(1)
+        ->and($rates[0]->cents)->toBe(11410)
+        ->and($rates[0]->label)->toContain('Courier B');
+});
+
+it('ignores couriers that failed to quote', function () {
+    enableBobGo();
+    Http::fake(['*/rates' => Http::response(['provider_rate_requests' => [
+        ['provider_slug' => 'down', 'provider_name' => 'Down', 'status' => 'failed', 'failed_reason' => 'timeout', 'responses' => []],
+        ['provider_slug' => 'up', 'provider_name' => 'Up', 'status' => 'success', 'responses' => [
+            ['status' => 'success', 'rate_amount' => 99.00, 'service_level' => ['name' => 'Economy', 'delivery_type' => 'door']],
+        ]],
+    ]])]);
+
+    $rates = bobgo()->ratesFor(13000, '2000');
+
+    expect($rates)->toHaveCount(1)->and($rates[0]->cents)->toBe(9900);
 });
