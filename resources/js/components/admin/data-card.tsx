@@ -15,7 +15,7 @@ interface DataCardProps {
 /** Card with a consistent header, used for every panel on an admin page. */
 export function DataCard({ title, description, action, children, className, flush }: DataCardProps) {
     return (
-        <Card className={cn('flex flex-col', className)}>
+        <Card className={cn(className)}>
             <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
                 <div className="min-w-0 space-y-1">
                     <CardTitle className="text-base font-semibold">{title}</CardTitle>
@@ -23,7 +23,7 @@ export function DataCard({ title, description, action, children, className, flus
                 </div>
                 {action && <div className="shrink-0">{action}</div>}
             </CardHeader>
-            <CardContent className={cn('flex-1', flush && 'px-0 pb-0')}>{children}</CardContent>
+            <CardContent className={cn(flush && 'px-0 pb-0')}>{children}</CardContent>
         </Card>
     );
 }

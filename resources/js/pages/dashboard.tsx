@@ -40,7 +40,7 @@ export default function Dashboard() {
                 <KpiGrid kpis={kpis ?? []} />
 
                 {/* Orders get the wider column on laptops; supporting panels stack beside it. */}
-                <div className="grid gap-4 sm:gap-6 xl:grid-cols-3">
+                <div className="grid items-start gap-4 sm:gap-6 xl:grid-cols-3">
                     <div className="xl:col-span-2">
                         <RecentOrders orders={recentOrders ?? []} />
                     </div>
