@@ -17,6 +17,7 @@ class EmailCampaignController extends Controller
         ]);
 
         return Inertia::render('marketing/email/index', [
+            'sampleData' => true,
             'campaigns' => $campaigns,
             'stats' => [
                 'total_campaigns' => $campaigns->count(),
@@ -30,6 +31,7 @@ class EmailCampaignController extends Controller
     public function create()
     {
         return Inertia::render('marketing/email/create', [
+            'sampleData' => true,
             'templates' => ['promotional', 'newsletter', 'welcome', 'cart_abandonment', 'order_confirmation'],
             'segments' => ['All Customers', 'VIP Customers', 'New Customers', 'Inactive Customers'],
         ]);

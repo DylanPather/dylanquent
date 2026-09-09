@@ -25,6 +25,7 @@ class ReconciliationController extends Controller
         ];
 
         return Inertia::render('finance/reconciliation/index', [
+            'sampleData' => true,
             'reconciliations' => $reconciliations,
             'stats' => $stats,
         ]);
@@ -47,6 +48,7 @@ class ReconciliationController extends Controller
         ]);
 
         return Inertia::render('finance/reconciliation/show', [
+            'sampleData' => true,
             'reconciliation' => $reconciliation,
         ]);
     }

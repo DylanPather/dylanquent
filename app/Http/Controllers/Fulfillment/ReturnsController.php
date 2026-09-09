@@ -25,6 +25,7 @@ class ReturnsController extends Controller
         ];
 
         return Inertia::render('fulfillment/returns/index', [
+            'sampleData' => true,
             'returns' => $returns,
             'stats' => $stats,
         ]);
@@ -48,6 +49,7 @@ class ReturnsController extends Controller
         ]);
 
         return Inertia::render('fulfillment/returns/show', [
+            'sampleData' => true,
             'return' => $return,
         ]);
     }

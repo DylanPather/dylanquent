@@ -18,6 +18,7 @@ class TicketController extends Controller
         ]);
 
         return Inertia::render('support/tickets/index', [
+            'sampleData' => true,
             'tickets' => $tickets,
             'stats' => [
                 'total_tickets' => 4,
@@ -47,6 +48,7 @@ class TicketController extends Controller
         ]);
 
         return Inertia::render('support/tickets/show', [
+            'sampleData' => true,
             'ticket' => $ticket,
         ]);
     }

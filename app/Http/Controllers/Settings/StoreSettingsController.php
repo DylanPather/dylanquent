@@ -25,6 +25,7 @@ class StoreSettingsController extends Controller
         ];
 
         return Inertia::render('settings/store', [
+            'sampleData' => true,
             'settings' => $settings,
             'countries' => [
                 'ZA' => 'South Africa',

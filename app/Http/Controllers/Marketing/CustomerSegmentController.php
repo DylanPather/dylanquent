@@ -18,6 +18,7 @@ class CustomerSegmentController extends Controller
         ]);
 
         return Inertia::render('marketing/segments/index', [
+            'sampleData' => true,
             'segments' => $segments,
             'stats' => [
                 'total_segments' => 4,
@@ -31,6 +32,7 @@ class CustomerSegmentController extends Controller
     public function create()
     {
         return Inertia::render('marketing/segments/create', [
+            'sampleData' => true,
             'conditions' => ['Total Orders', 'LTV', 'Last Purchase', 'Email Engaged', 'Avg Order Value'],
         ]);
     }

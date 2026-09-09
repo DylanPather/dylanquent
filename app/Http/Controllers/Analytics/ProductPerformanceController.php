@@ -20,6 +20,7 @@ class ProductPerformanceController extends Controller
         ]);
 
         return Inertia::render('analytics/product-performance/index', [
+            'sampleData' => true,
             'products' => $products,
             'period' => $period,
             'stats' => [
@@ -53,6 +54,7 @@ class ProductPerformanceController extends Controller
         ]);
 
         return Inertia::render('analytics/product-performance/show', [
+            'sampleData' => true,
             'product' => $product,
         ]);
     }

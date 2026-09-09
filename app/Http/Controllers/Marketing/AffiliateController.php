@@ -18,6 +18,7 @@ class AffiliateController extends Controller
         ]);
 
         return Inertia::render('marketing/affiliates/index', [
+            'sampleData' => true,
             'affiliates' => $affiliates,
             'stats' => [
                 'total_affiliates' => $affiliates->count(),
@@ -54,6 +55,7 @@ class AffiliateController extends Controller
         ]);
 
         return Inertia::render('marketing/affiliates/show', [
+            'sampleData' => true,
             'affiliate' => $affiliate,
         ]);
     }

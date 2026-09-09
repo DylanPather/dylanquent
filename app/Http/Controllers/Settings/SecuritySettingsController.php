@@ -27,6 +27,7 @@ class SecuritySettingsController extends Controller
         ]);
 
         return Inertia::render('settings/security', [
+            'sampleData' => true,
             'settings' => $settings,
             'sessions' => $sessions,
         ]);

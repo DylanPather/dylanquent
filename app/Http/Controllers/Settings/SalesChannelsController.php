@@ -18,6 +18,7 @@ class SalesChannelsController extends Controller
         ]);
 
         return Inertia::render('settings/sales-channels', [
+            'sampleData' => true,
             'channels' => $channels,
             'stats' => [
                 'total_channels' => 4,

@@ -30,6 +30,7 @@ class ExpenseController extends Controller
         ];
 
         return Inertia::render('finance/expenses/index', [
+            'sampleData' => true,
             'expenses' => $expenses,
             'stats' => $stats,
         ]);
@@ -38,6 +39,7 @@ class ExpenseController extends Controller
     public function create()
     {
         return Inertia::render('finance/expenses/create', [
+            'sampleData' => true,
             'categories' => ['Shipping', 'Supplies', 'Marketing', 'Utilities', 'Salaries', 'Equipment', 'Other'],
         ]);
     }

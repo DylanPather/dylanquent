@@ -17,6 +17,7 @@ class SMSCampaignController extends Controller
         ]);
 
         return Inertia::render('marketing/sms/index', [
+            'sampleData' => true,
             'campaigns' => $campaigns,
             'stats' => [
                 'total_campaigns' => $campaigns->count(),
@@ -30,6 +31,7 @@ class SMSCampaignController extends Controller
     public function create()
     {
         return Inertia::render('marketing/sms/create', [
+            'sampleData' => true,
             'templates' => ['promotional', 'reminder', 'welcome', 'back_in_stock', 'shipping_update'],
         ]);
     }

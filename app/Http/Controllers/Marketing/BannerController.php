@@ -17,6 +17,7 @@ class BannerController extends Controller
         ]);
 
         return Inertia::render('marketing/banners/index', [
+            'sampleData' => true,
             'banners' => $banners,
             'stats' => [
                 'total_banners' => $banners->count(),
@@ -30,6 +31,7 @@ class BannerController extends Controller
     public function create()
     {
         return Inertia::render('marketing/banners/create', [
+            'sampleData' => true,
             'types' => ['header', 'floating', 'popup', 'sidebar'],
             'positions' => ['top', 'bottom', 'left', 'right', 'center'],
         ]);

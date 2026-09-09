@@ -12,6 +12,28 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
+
+    /**
+     * Sellable stock, as SQL.
+     *
+     * A product's stock lives in two places: the legacy products.stock_quantity
+     * column, and inventory_levels per variant — which is what the storefront
+     * reads. Where a product has variants, the variant inventory is
+     * authoritative; the admin previously showed the column and reported
+     * in-stock products as sold out.
+     */
+    private function stockExpression(): string
+    {
+        $variantStock = '(select coalesce(sum(il.quantity), 0)
+            from inventory_levels il
+            join product_variants pv on pv.id = il.product_variant_id
+            where pv.product_id = products.id)';
+
+        $hasVariants = '(select count(*) from product_variants pv2 where pv2.product_id = products.id)';
+
+        return "(case when {$hasVariants} > 0 then {$variantStock} else products.stock_quantity end)";
+    }
+
     public function index(Request $request): Response
     {
         $query = Product::query();
@@ -34,10 +56,10 @@ class ProductController extends Controller
         // Filter by stock level
         if ($request->has('stock_status') && $request->stock_status) {
             match ($request->stock_status) {
-                'in_stock' => $query->where('stock_quantity', '>', 0),
-                'low_stock' => $query->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+                'in_stock' => $query->whereRaw($this->stockExpression().' > 0'),
+                'low_stock' => $query->whereRaw($this->stockExpression().' <= products.low_stock_threshold')
                     ->where('low_stock_threshold', '>', 0),
-                'out_of_stock' => $query->where('stock_quantity', '=', 0),
+                'out_of_stock' => $query->whereRaw($this->stockExpression().' = 0'),
                 default => null,
             };
         }
@@ -50,6 +72,7 @@ class ProductController extends Controller
 
         $products = $query
             ->with('images')
+            ->selectRaw('products.*, '.$this->stockExpression().' as sellable_stock')
             ->paginate(15)
             ->through(function (Product $p) {
                 return [
@@ -59,7 +82,7 @@ class ProductController extends Controller
                     'slug' => $p->slug,
                     'price_cents' => $p->price_cents,
                     'currency' => $p->currency,
-                    'stock_quantity' => $p->stock_quantity,
+                    'stock_quantity' => (int) ($p->sellable_stock ?? $p->stock_quantity),
                     'low_stock_threshold' => $p->low_stock_threshold,
                     'is_active' => $p->is_active,
                     'created_at' => $p->created_at?->toDateTimeString(),
@@ -72,10 +95,10 @@ class ProductController extends Controller
         // Calculate stats
         $totalProducts = Product::count();
         $activeProducts = Product::where('is_active', true)->count();
-        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+        $lowStockProducts = Product::whereRaw($this->stockExpression().' <= products.low_stock_threshold')
             ->where('low_stock_threshold', '>', 0)->count();
-        $outOfStockProducts = Product::where('stock_quantity', 0)->count();
-        $totalStock = Product::sum('stock_quantity');
+        $outOfStockProducts = Product::whereRaw($this->stockExpression().' = 0')->count();
+        $totalStock = (int) Product::selectRaw('coalesce(sum('.$this->stockExpression().'), 0) as total')->value('total');
 
         $categories = \App\Models\Category::all(['id', 'name']);
 

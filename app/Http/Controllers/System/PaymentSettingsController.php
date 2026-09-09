@@ -47,6 +47,7 @@ class PaymentSettingsController extends Controller
         }
 
         return Inertia::render('system/payment-settings', [
+            'sampleData' => true,
             'gateways' => $gateways,
             'credentials' => $credentials,
         ]);

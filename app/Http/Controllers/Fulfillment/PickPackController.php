@@ -25,6 +25,7 @@ class PickPackController extends Controller
         ];
 
         return Inertia::render('fulfillment/pick-pack/index', [
+            'sampleData' => true,
             'orders' => $orders,
             'stats' => $stats,
         ]);
@@ -52,6 +53,7 @@ class PickPackController extends Controller
         ]);
 
         return Inertia::render('fulfillment/pick-pack/show', [
+            'sampleData' => true,
             'order' => $order,
         ]);
     }

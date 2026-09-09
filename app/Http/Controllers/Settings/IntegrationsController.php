@@ -20,6 +20,7 @@ class IntegrationsController extends Controller
         ]);
 
         return Inertia::render('settings/integrations', [
+            'sampleData' => true,
             'integrations' => $integrations,
         ]);
     }

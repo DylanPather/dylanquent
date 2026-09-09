@@ -18,6 +18,7 @@ class LoyaltyProgramController extends Controller
         ]);
 
         return Inertia::render('marketing/loyalty/index', [
+            'sampleData' => true,
             'members' => $members,
             'stats' => [
                 'total_members' => 4,
@@ -40,6 +41,7 @@ class LoyaltyProgramController extends Controller
         ]);
 
         return Inertia::render('marketing/loyalty/settings', [
+            'sampleData' => true,
             'settings' => $settings,
         ]);
     }

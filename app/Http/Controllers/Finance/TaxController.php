@@ -26,6 +26,7 @@ class TaxController extends Controller
         ];
 
         return Inertia::render('finance/taxes/index', [
+            'sampleData' => true,
             'taxes' => $taxes,
             'stats' => $stats,
             'period' => $period,
@@ -50,6 +51,7 @@ class TaxController extends Controller
         ]);
 
         return Inertia::render('finance/taxes/show', [
+            'sampleData' => true,
             'tax' => $tax,
         ]);
     }

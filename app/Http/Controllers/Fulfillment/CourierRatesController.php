@@ -25,6 +25,7 @@ class CourierRatesController extends Controller
         ];
 
         return Inertia::render('fulfillment/couriers/index', [
+            'sampleData' => true,
             'couriers' => $couriers,
             'stats' => $stats,
         ]);
@@ -33,6 +34,7 @@ class CourierRatesController extends Controller
     public function create()
     {
         return Inertia::render('fulfillment/couriers/create', [
+            'sampleData' => true,
             'couriers' => ['FedEx', 'UPS', 'DHL', 'USPS', 'TNT', 'Aramex'],
             'countries' => ['South Africa', 'United States', 'United Kingdom', 'Australia'],
         ]);
@@ -54,6 +56,7 @@ class CourierRatesController extends Controller
         ]);
 
         return Inertia::render('fulfillment/couriers/edit', [
+            'sampleData' => true,
             'courier' => $courier,
         ]);
     }

@@ -25,6 +25,7 @@ class DeliveriesController extends Controller
         ];
 
         return Inertia::render('fulfillment/deliveries/index', [
+            'sampleData' => true,
             'deliveries' => $deliveries,
             'stats' => $stats,
         ]);
@@ -49,6 +50,7 @@ class DeliveriesController extends Controller
         ]);
 
         return Inertia::render('fulfillment/deliveries/show', [
+            'sampleData' => true,
             'delivery' => $delivery,
         ]);
     }

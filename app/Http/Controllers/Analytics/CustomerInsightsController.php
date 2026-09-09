@@ -18,6 +18,7 @@ class CustomerInsightsController extends Controller
         ]);
 
         return Inertia::render('analytics/customer-insights/index', [
+            'sampleData' => true,
             'customers' => $customers,
             'stats' => [
                 'total_customers' => $customers->count(),
@@ -48,6 +49,7 @@ class CustomerInsightsController extends Controller
         ]);
 
         return Inertia::render('analytics/customer-insights/show', [
+            'sampleData' => true,
             'customer' => $customer,
         ]);
     }

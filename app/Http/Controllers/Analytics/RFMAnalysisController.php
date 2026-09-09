@@ -20,6 +20,7 @@ class RFMAnalysisController extends Controller
         ]);
 
         return Inertia::render('analytics/rfm-analysis/index', [
+            'sampleData' => true,
             'segments' => $segments,
             'stats' => [
                 'total_customers' => 1024,

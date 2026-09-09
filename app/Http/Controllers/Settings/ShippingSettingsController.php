@@ -22,6 +22,7 @@ class ShippingSettingsController extends Controller
         ]);
 
         return Inertia::render('settings/shipping', [
+            'sampleData' => true,
             'settings' => $settings,
             'carriers' => ['fedex', 'ups', 'dhl', 'usps', 'aramex'],
             'countries' => ['South Africa', 'United States', 'United Kingdom'],

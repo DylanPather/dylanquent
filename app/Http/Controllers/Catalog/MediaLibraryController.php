@@ -21,6 +21,7 @@ class MediaLibraryController extends Controller
         }, $files);
 
         return \Inertia\Inertia::render('catalog/media-library', [
+            'sampleData' => true,
             'media' => $media
         ]);
     }
