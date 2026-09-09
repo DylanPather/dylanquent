@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Storefront;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\OrderItem;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
@@ -44,7 +48,7 @@ class CheckoutController extends Controller
         return DB::transaction(function () use ($request, $cart) {
             $customer = auth()->user()->customer;
 
-            if (!$customer) {
+            if (! $customer) {
                 $customer = Customer::create([
                     'user_id' => auth()->id(),
                     'name' => auth()->user()->name,
@@ -52,33 +56,75 @@ class CheckoutController extends Controller
                 ]);
             }
 
+            // Prices are re-read from the database rather than trusted from the
+            // cart, which captured them whenever the item was added. A price
+            // change between add-to-cart and checkout would otherwise be
+            // charged at the stale amount.
+            $lines = [];
             $subtotal = 0;
+
             foreach ($cart as $item) {
-                $subtotal += ($item['price_cents'] * $item['quantity']);
+                $product = Product::find($item['product_id']);
+
+                if (! $product || ! $product->is_active) {
+                    throw ValidationException::withMessages([
+                        'cart' => "\"{$item['name']}\" is no longer available.",
+                    ]);
+                }
+
+                $variant = $item['variant_id'] ? ProductVariant::with('inventoryLevels')->find($item['variant_id']) : null;
+
+                if ($item['variant_id'] && (! $variant || $variant->product_id !== $product->id)) {
+                    throw ValidationException::withMessages([
+                        'cart' => "An option in your cart is no longer available.",
+                    ]);
+                }
+
+                // Stock is checked again here: it was verified when the item
+                // went into the cart, which may have been long ago.
+                if ($variant && $variant->track_inventory) {
+                    $available = (int) $variant->inventoryLevels->sum('quantity');
+
+                    if ($available < $item['quantity']) {
+                        throw ValidationException::withMessages([
+                            'cart' => "Only {$available} left of \"{$item['name']}\".",
+                        ]);
+                    }
+                }
+
+                $unitPrice = (int) ($variant?->price_cents ?: $product->price_cents);
+                $lineTotal = $unitPrice * $item['quantity'];
+                $subtotal += $lineTotal;
+
+                $lines[] = [
+                    'product_id' => $product->id,
+                    'product_variant_id' => $variant?->id,
+                    'name' => $item['name'],
+                    'quantity' => $item['quantity'],
+                    'unit_price_cents' => $unitPrice,
+                    'total_cents' => $lineTotal,
+                ];
             }
 
             $order = Order::create([
-                'order_number' => 'ORD-' . strtoupper(uniqid()),
+                'order_number' => 'ORD-'.strtoupper(Str::random(10)),
                 'customer_id' => $customer->id,
                 'status' => 'pending',
+                'payment_status' => 'pending',
                 'subtotal_cents' => $subtotal,
-                'total_cents' => $subtotal, // Draft: simplify tax/shipping
-                'currency' => 'USD',
+                // Tax and shipping are not calculated yet, so the total is the
+                // subtotal. Both must be added before charging real customers.
+                'tax_total_cents' => 0,
+                'shipping_total_cents' => 0,
+                'total_cents' => $subtotal,
+                'currency' => config('store.currency'),
                 'shipping_address' => $request->shipping_address,
                 'billing_address' => $request->billing_address,
                 'placed_at' => now(),
             ]);
 
-            foreach ($cart as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'product_variant_id' => $item['variant_id'],
-                    'name' => $item['name'],
-                    'quantity' => $item['quantity'],
-                    'unit_price_cents' => $item['price_cents'],
-                    'total_cents' => $item['price_cents'] * $item['quantity'],
-                ]);
+            foreach ($lines as $line) {
+                OrderItem::create($line + ['order_id' => $order->id]);
             }
 
             session()->put('order_id', $order->id);

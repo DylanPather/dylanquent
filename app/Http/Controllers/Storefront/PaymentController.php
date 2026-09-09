@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Storefront;
 
 use App\Models\Order;
+use App\Models\InventoryLevel;
 use App\Services\PaymentGateway\PaymentProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PaymentController
@@ -56,8 +58,20 @@ class PaymentController
 
         $order = Order::find($validated['order_id']);
 
-        if (!$order || $order->customer_id !== auth('customer')->id()) {
+        // There is no 'customer' auth guard — only 'web'. This previously
+        // threw InvalidArgumentException on every call, so no payment could
+        // ever be confirmed.
+        $customerId = auth()->user()?->customer?->id;
+
+        if (! $order || ! $customerId || $order->customer_id !== $customerId) {
             return response()->json(['error' => 'Invalid order'], 403);
+        }
+
+        if ($order->payment_status === 'paid') {
+            return response()->json([
+                'status' => 'success',
+                'redirect' => route('checkout.success', $order->order_number),
+            ]);
         }
 
         try {
@@ -98,8 +112,20 @@ class PaymentController
 
         $order = Order::find($validated['order_id']);
 
-        if (!$order || $order->customer_id !== auth('customer')->id()) {
+        // There is no 'customer' auth guard — only 'web'. This previously
+        // threw InvalidArgumentException on every call, so no payment could
+        // ever be confirmed.
+        $customerId = auth()->user()?->customer?->id;
+
+        if (! $order || ! $customerId || $order->customer_id !== $customerId) {
             return response()->json(['error' => 'Invalid order'], 403);
+        }
+
+        if ($order->payment_status === 'paid') {
+            return response()->json([
+                'status' => 'success',
+                'redirect' => route('checkout.success', $order->order_number),
+            ]);
         }
 
         try {
@@ -107,12 +133,35 @@ class PaymentController
             $result = $gateway->confirm($validated['payment_id']);
 
             if ($result['status'] === 'success') {
+                // Verify the gateway actually captured what this order costs.
+                // Without this, any succeeded payment id could mark any order
+                // paid, whatever was really charged.
+                $paidAmount = (int) ($result['amount'] ?? 0);
+                $paidCurrency = strtoupper((string) ($result['currency'] ?? ''));
+
+                if ($paidAmount !== (int) $order->total_cents || $paidCurrency !== strtoupper($order->currency)) {
+                    Log::warning('Payment amount mismatch', [
+                        'order_id' => $order->id,
+                        'expected' => $order->total_cents.' '.$order->currency,
+                        'received' => $paidAmount.' '.$paidCurrency,
+                    ]);
+
+                    $order->update(['payment_status' => 'failed']);
+
+                    return response()->json([
+                        'status' => 'failed',
+                        'message' => 'Payment amount did not match the order total.',
+                    ], 422);
+                }
+
                 DB::transaction(function () use ($order, $result) {
                     $order->update([
                         'payment_id' => $result['payment_id'],
                         'payment_status' => 'paid',
                         'status' => 'paid',
                     ]);
+
+                    $this->reduceStock($order);
                 });
 
                 session()->forget(['order_id', 'cart']);
@@ -138,6 +187,49 @@ class PaymentController
     /**
      * Handle webhook from payment gateway
      */
+    /**
+     * Draw the ordered quantities out of inventory.
+     *
+     * Nothing reduced stock when an order was paid, so the same unit could be
+     * sold indefinitely. Levels are drained warehouse by warehouse.
+     */
+    private function reduceStock(Order $order): void
+    {
+        $order->loadMissing('items');
+
+        foreach ($order->items as $item) {
+            if (! $item->product_variant_id) {
+                continue;
+            }
+
+            $remaining = (int) $item->quantity;
+
+            $levels = InventoryLevel::where('product_variant_id', $item->product_variant_id)
+                ->where('quantity', '>', 0)
+                ->lockForUpdate()
+                ->orderByDesc('quantity')
+                ->get();
+
+            foreach ($levels as $level) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $take = min($remaining, (int) $level->quantity);
+                $level->decrement('quantity', $take);
+                $remaining -= $take;
+            }
+
+            if ($remaining > 0) {
+                Log::warning('Order paid with insufficient stock on hand', [
+                    'order_id' => $order->id,
+                    'variant_id' => $item->product_variant_id,
+                    'short_by' => $remaining,
+                ]);
+            }
+        }
+    }
+
     public function webhook(Request $request, string $gateway)
     {
         try {
@@ -157,10 +249,17 @@ class PaymentController
 
                 if ($order) {
                     DB::transaction(function () use ($order, $result) {
+                        $wasPaid = $order->payment_status === 'paid';
+
                         $order->update([
                             'payment_status' => $result['status'],
                             'status' => $result['status'] === 'paid' ? 'paid' : $order->status,
                         ]);
+
+                        // Gateways retry webhooks; only draw stock on the transition.
+                        if (! $wasPaid && $result['status'] === 'paid') {
+                            $this->reduceStock($order);
+                        }
 
                         if ($result['status'] === 'failed') {
                             event(new \App\Events\PaymentFailed($order, $result['reason'] ?? 'Unknown'));
