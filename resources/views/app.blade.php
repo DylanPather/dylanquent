@@ -43,7 +43,19 @@
 
     @routes
     @viteReactRefresh
-    @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+    @php
+        // The page-specific entry is included for code splitting, but @vite
+        // throws if the file is missing — turning an unbuilt screen into a
+        // 500 before React ever runs. Include it only when it exists; the
+        // client resolver renders a fallback for the rest.
+        $viteEntries = ['resources/js/app.tsx'];
+        $pageEntry = "resources/js/pages/{$page['component']}.tsx";
+
+        if (is_file(base_path($pageEntry))) {
+            $viteEntries[] = $pageEntry;
+        }
+    @endphp
+    @vite($viteEntries)
     @inertiaHead
 </head>
 
