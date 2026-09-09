@@ -12,7 +12,7 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\User::updateOrCreate(
+        $user = \App\Models\User::updateOrCreate(
             ['email' => 'admin@dylanquent.com'],
             [
                 'name' => 'Admin User',
@@ -21,5 +21,10 @@ class AdminUserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        // The `role` column is legacy; the app reads Spatie roles.
+        if (\Spatie\Permission\Models\Role::where('name', 'admin')->exists()) {
+            $user->syncRoles(['admin']);
+        }
     }
 }

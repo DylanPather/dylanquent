@@ -71,7 +71,9 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'roles' => $request->user()->getRoleNames()->toArray(),
-                    'role' => $request->user()->getRoleNames()->first(), // Primary role for backward compatibility
+                    // Falls back to the legacy `role` column so a missing Spatie
+                    // assignment cannot silently hide every admin-only section.
+                    'role' => $request->user()->getRoleNames()->first() ?? $request->user()->role,
                 ] : null,
             ],
             'flash' => [

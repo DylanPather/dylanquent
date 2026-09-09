@@ -12,7 +12,7 @@ class RegularUserSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\User::updateOrCreate(
+        $user = \App\Models\User::updateOrCreate(
             ['email' => 'user@dylanquent.com'],
             [
                 'name' => 'Regular User',
@@ -21,5 +21,9 @@ class RegularUserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        if (\Spatie\Permission\Models\Role::where('name', 'customer')->exists()) {
+            $user->syncRoles(['customer']);
+        }
     }
 }
