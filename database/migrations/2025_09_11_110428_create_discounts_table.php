@@ -30,14 +30,6 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
-
-        Schema::create('discount_product', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('discount_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-            $table->timestamps();
-            $table->unique(['discount_id', 'product_id']);
-        });
     }
 
     /**
