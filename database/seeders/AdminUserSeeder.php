@@ -2,28 +2,56 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class AdminUserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $user = \App\Models\User::updateOrCreate(
-            ['email' => 'admin@dylanquent.com'],
-            [
-                'name' => 'Admin User',
-                'password' => \Illuminate\Support\Facades\Hash::make('password'),
-                'role' => 'admin',
-                'email_verified_at' => now(),
-            ]
-        );
+        $email = env('ADMIN_EMAIL', 'admin@dylanquent.com');
+        $existing = User::where('email', $email)->first();
 
-        // The `role` column is legacy; the app reads Spatie roles.
-        if (\Spatie\Permission\Models\Role::where('name', 'admin')->exists()) {
+        // Only ever set a password when creating the account. Re-seeding an
+        // existing admin used to reset it, silently undoing any change made
+        // through the UI.
+        if ($existing) {
+            $existing->update(['role' => 'admin', 'email_verified_at' => $existing->email_verified_at ?? now()]);
+            $this->assignRole($existing);
+
+            return;
+        }
+
+        $password = env('ADMIN_PASSWORD');
+        $generated = $password === null;
+
+        if ($generated) {
+            $password = Str::password(20);
+        }
+
+        $user = User::create([
+            'name' => env('ADMIN_NAME', 'Admin User'),
+            'email' => $email,
+            'password' => Hash::make($password),
+            'role' => 'admin',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->assignRole($user);
+
+        if ($generated) {
+            // Printed once, never committed. Set ADMIN_PASSWORD to choose your own.
+            $this->command?->warn("Generated admin password for {$email}: {$password}");
+            $this->command?->warn('Store it now — it is not shown again.');
+        }
+    }
+
+    private function assignRole(User $user): void
+    {
+        if (Role::where('name', 'admin')->exists()) {
             $user->syncRoles(['admin']);
         }
     }
