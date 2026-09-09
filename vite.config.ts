@@ -22,7 +22,9 @@ export default defineConfig({
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
         },
     },
-    // Root-domain deploys need '/'. Set VITE_BASE_PATH to deploy under a
-    // subpath (e.g. GitHub Pages at /dylanquent).
-    base: process.env.VITE_BASE_PATH || '/'
+    // Base is intentionally left to laravel-vite-plugin, which derives it
+    // from buildDirectory ('/build/'). Setting it here breaks the runtime
+    // resolution of lazy-loaded page chunks. Override only via
+    // VITE_BASE_PATH for a subpath deploy.
+    ...(process.env.VITE_BASE_PATH ? { base: process.env.VITE_BASE_PATH } : {})
 });
