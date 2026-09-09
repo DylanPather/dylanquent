@@ -45,7 +45,7 @@ class ReturnsController extends Controller
             ],
             'created_at' => 'May 15, 2025',
             'comments' => 'Ordered size M but received size S. Would like size L instead.',
-        ])->all();
+        ]);
 
         return Inertia::render('fulfillment/returns/show', [
             'return' => $return,

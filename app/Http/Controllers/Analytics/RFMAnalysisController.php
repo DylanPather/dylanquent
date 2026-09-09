@@ -17,7 +17,7 @@ class RFMAnalysisController extends Controller
             ['segment' => 'At Risk', 'count' => 123, 'recency' => '60-90 days', 'frequency' => 'Yearly', 'monetary' => 'R200-500', 'percentage' => '12.0%'],
             ['segment' => 'Cannot Lose Them', 'count' => 89, 'recency' => '90+ days', 'frequency' => 'Rarely', 'monetary' => 'R500-2000', 'percentage' => '8.7%'],
             ['segment' => 'Lost', 'count' => 375, 'recency' => '90+ days', 'frequency' => 'One-time', 'monetary' => 'R50-500', 'percentage' => '36.6%'],
-        ])->all();
+        ]);
 
         return Inertia::render('analytics/rfm-analysis/index', [
             'segments' => $segments,

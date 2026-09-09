@@ -51,7 +51,7 @@ class CourierRatesController extends Controller
             'base_rate' => 50,
             'per_kg' => 5.50,
             'estimated_delivery' => '2-3 business days',
-        ])->all();
+        ]);
 
         return Inertia::render('fulfillment/couriers/edit', [
             'courier' => $courier,

@@ -18,13 +18,13 @@ class SecuritySettingsController extends Controller
             'api_key_rotation_days' => 90,
             'ssl_enabled' => true,
             'cors_enabled' => false,
-        ])->all();
+        ]);
 
         $sessions = collect([
             ['id' => 1, 'device' => 'MacBook Pro', 'location' => 'Johannesburg, ZA', 'last_active' => 'Just now', 'ip' => '197.53.123.45'],
             ['id' => 2, 'device' => 'iPhone 12', 'location' => 'Johannesburg, ZA', 'last_active' => '2 hours ago', 'ip' => '197.53.124.50'],
             ['id' => 3, 'device' => 'Unknown Device', 'location' => 'Johannesburg, ZA', 'last_active' => '5 days ago', 'ip' => '105.27.100.100'],
-        ])->all();
+        ]);
 
         return Inertia::render('settings/security', [
             'settings' => $settings,

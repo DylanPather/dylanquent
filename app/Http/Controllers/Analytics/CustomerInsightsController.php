@@ -45,7 +45,7 @@ class CustomerInsightsController extends Controller
                 ['order_number' => 'ORD-002', 'date' => 'April 22, 2025', 'amount' => 325.50, 'status' => 'Delivered'],
                 ['order_number' => 'ORD-003', 'date' => 'March 15, 2025', 'amount' => 280.00, 'status' => 'Delivered'],
             ],
-        ])->all();
+        ]);
 
         return Inertia::render('analytics/customer-insights/show', [
             'customer' => $customer,

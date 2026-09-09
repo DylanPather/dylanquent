@@ -59,10 +59,10 @@ class SalesReportController extends Controller
             ->get();
 
         // Payment methods
-        $paymentMethods = Order::selectRaw('payment_method, COUNT(*) as count, SUM(total_cents)/100 as total')
+        $paymentMethods = Order::selectRaw('payment_gateway, COUNT(*) as count, SUM(total_cents)/100 as total')
             ->where('created_at', '>=', $startDate)
             ->where('payment_status', 'paid')
-            ->groupBy('payment_method')
+            ->groupBy('payment_gateway')
             ->get();
 
         return Inertia::render('analytics/sales', [

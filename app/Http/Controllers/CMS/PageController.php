@@ -15,7 +15,7 @@ class PageController extends Controller
             ['id' => 2, 'title' => 'Contact', 'slug' => 'contact', 'status' => 'published', 'views' => 2050, 'created_at' => 'March 10, 2025', 'author' => 'Dylan'],
             ['id' => 3, 'title' => 'FAQ', 'slug' => 'faq', 'status' => 'draft', 'views' => 0, 'created_at' => 'April 01, 2025', 'author' => 'Dylan'],
             ['id' => 4, 'title' => 'Shipping & Returns', 'slug' => 'shipping-returns', 'status' => 'published', 'views' => 856, 'created_at' => 'March 20, 2025', 'author' => 'Dylan'],
-        ])->all();
+        ]);
 
         return Inertia::render('cms/pages/index', [
             'pages' => $pages,
@@ -48,7 +48,7 @@ class PageController extends Controller
             'content' => '<p>Learn about our company...</p>',
             'meta_title' => 'About Us | Dylanquent',
             'meta_description' => 'Learn more about Dylanquent and our mission',
-        ])->all();
+        ]);
 
         return Inertia::render('cms/pages/edit', [
             'page' => $page,

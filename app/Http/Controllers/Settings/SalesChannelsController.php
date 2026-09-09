@@ -15,7 +15,7 @@ class SalesChannelsController extends Controller
             ['id' => 2, 'name' => 'Mobile App', 'type' => 'mobile', 'status' => 'active', 'orders' => 234, 'revenue' => 56780.25],
             ['id' => 3, 'name' => 'Instagram Shop', 'type' => 'social', 'status' => 'connected', 'orders' => 89, 'revenue' => 23450.00],
             ['id' => 4, 'name' => 'Facebook Marketplace', 'type' => 'social', 'status' => 'inactive', 'orders' => 0, 'revenue' => 0],
-        ])->all();
+        ]);
 
         return Inertia::render('settings/sales-channels', [
             'channels' => $channels,

@@ -64,6 +64,8 @@ type NavItem = {
     external?: boolean;
     disabled?: boolean;
     adminOnly?: boolean;
+    /** Route does not exist yet — hidden from the sidebar until built. */
+    planned?: boolean;
     items?: NavItem[];
 };
 
@@ -106,8 +108,8 @@ const MAIN_ITEMS: NavItem[] = [
         icon: LayoutDashboard,
         items: [
             { title: 'Overview', href: '/dashboard', icon: Gauge },
-            { title: 'Sales Snapshot', href: '/dashboard/sales', icon: BarChart3 },
-            { title: 'Operations Health', href: '/dashboard/ops', icon: CheckCheck },
+            { title: 'Sales Snapshot', href: '/dashboard/sales', icon: BarChart3, planned: true },
+            { title: 'Operations Health', href: '/dashboard/ops', icon: CheckCheck, planned: true },
         ],
     },
 
@@ -147,19 +149,19 @@ const MAIN_ITEMS: NavItem[] = [
             { title: 'Point of Sale', href: '/sales/pos', icon: ShoppingBag },
             { title: 'Orders', href: '/sales/orders', icon: ShoppingCart, badge: '7' },
             { title: 'Invoices', href: '/sales/invoices', icon: Receipt },
-            { title: 'Payments', href: '/sales/payments', icon: CreditCard },
+            { title: 'Payments', href: '/sales/payments', icon: CreditCard, planned: true },
             { title: 'Refunds', href: '/sales/refunds', icon: HandCoins },
-            { title: 'Subscriptions', href: '/sales/subscriptions', icon: CalendarDays },
+            { title: 'Subscriptions', href: '/sales/subscriptions', icon: CalendarDays, planned: true },
             {
                 title: 'Discounts & Promotions',
                 icon: Percent,
                 items: [
                     { title: 'Discount Codes', href: '/sales/discounts/codes', icon: Percent },
-                    { title: 'Automatic Discounts', href: '/sales/discounts/automatic', icon: Tags },
-                    { title: 'Gift Cards', href: '/sales/discounts/gift-cards', icon: CreditCard },
+                    { title: 'Automatic Discounts', href: '/sales/discounts/automatic', icon: Tags, planned: true },
+                    { title: 'Gift Cards', href: '/sales/discounts/gift-cards', icon: CreditCard, planned: true },
                 ],
             },
-            { title: 'Abandoned Carts', href: '/sales/abandoned', icon: ClipboardList, badge: '4' },
+            { title: 'Abandoned Carts', href: '/sales/abandoned', icon: ClipboardList, badge: '4', planned: true },
         ],
     },
 
@@ -182,10 +184,10 @@ const MAIN_ITEMS: NavItem[] = [
         adminOnly: true,
         items: [
             { title: 'Stock Levels', href: '/inventory/stock', icon: Box },
-            { title: 'Transfers', href: '/inventory/transfers', icon: Truck },
+            { title: 'Transfers', href: '/inventory/transfers', icon: Truck, planned: true },
             { title: 'Warehouses', href: '/inventory/warehouses', icon: Building2 },
             { title: 'Purchase Orders', href: '/inventory/pos', icon: Receipt },
-            { title: 'Reorder Rules', href: '/inventory/reorder', icon: ListChecks },
+            { title: 'Reorder Rules', href: '/inventory/reorder', icon: ListChecks, planned: true },
         ],
     },
 
@@ -196,10 +198,10 @@ const MAIN_ITEMS: NavItem[] = [
         adminOnly: true,
         items: [
             { title: 'All Customers', href: '/customers', icon: Users },
-            { title: 'Segments', href: '/customers/segments', icon: Tags },
-            { title: 'Loyalty & Rewards', href: '/customers/loyalty', icon: Percent },
-            { title: 'Support Tickets', href: '/customers/tickets', icon: MessageSquareMore },
-            { title: 'RFM Analysis', href: '/customers/rfm', icon: BarChart3 },
+            { title: 'Segments', href: '/marketing/segments', icon: Tags },
+            { title: 'Loyalty & Rewards', href: '/marketing/loyalty', icon: Percent },
+            { title: 'Support Tickets', href: '/customers/tickets', icon: MessageSquareMore, planned: true },
+            { title: 'RFM Analysis', href: '/analytics/rfm-analysis', icon: BarChart3 },
         ],
     },
     {
@@ -207,12 +209,12 @@ const MAIN_ITEMS: NavItem[] = [
         icon: Megaphone,
         adminOnly: true,
         items: [
-            { title: 'Campaigns', href: '/marketing/campaigns', icon: Flag },
+            { title: 'Campaigns', href: '/marketing/campaigns', icon: Flag, planned: true },
             { title: 'Email', href: '/marketing/email', icon: Mail },
             { title: 'SMS / WhatsApp', href: '/marketing/sms', icon: MessageSquareMore },
             { title: 'On-Site Banners', href: '/marketing/banners', icon: ImageIcon },
             { title: 'Affiliates', href: '/marketing/affiliates', icon: Users },
-            { title: 'UTM Tracking', href: '/marketing/utm', icon: Cable },
+            { title: 'UTM Tracking', href: '/marketing/utm', icon: Cable, planned: true },
         ],
     },
 
@@ -222,10 +224,10 @@ const MAIN_ITEMS: NavItem[] = [
         icon: Files,
         adminOnly: true,
         items: [
-            { title: 'Pages', href: '/content/pages', icon: Files },
-            { title: 'Blog', href: '/content/blog', icon: Files },
-            { title: 'Navigation', href: '/content/navigation', icon: ChevronRight },
-            { title: 'Theme & Branding', href: '/content/theme', icon: Brush },
+            { title: 'Pages', href: '/content/pages', icon: Files, planned: true },
+            { title: 'Blog', href: '/content/blog', icon: Files, planned: true },
+            { title: 'Navigation', href: '/content/navigation', icon: ChevronRight, planned: true },
+            { title: 'Theme & Branding', href: '/content/theme', icon: Brush, planned: true },
         ],
     },
 
@@ -238,8 +240,8 @@ const MAIN_ITEMS: NavItem[] = [
             { title: 'Sales Reports', href: '/analytics/sales', icon: BarChart3 },
             { title: 'Product Performance', href: '/analytics/products', icon: Shirt },
             { title: 'Customer Insights', href: '/analytics/customers', icon: Users },
-            { title: 'Funnel & AOV', href: '/analytics/funnel', icon: Gauge },
-            { title: 'Cohorts & LTV', href: '/analytics/cohorts', icon: Users },
+            { title: 'Funnel & AOV', href: '/analytics/funnel', icon: Gauge, planned: true },
+            { title: 'Cohorts & LTV', href: '/analytics/cohorts', icon: Users, planned: true },
         ],
     },
     {
@@ -247,7 +249,7 @@ const MAIN_ITEMS: NavItem[] = [
         icon: Receipt,
         adminOnly: true,
         items: [
-            { title: 'Payouts', href: '/finance/payouts', icon: HandCoins },
+            { title: 'Payouts', href: '/finance/payouts', icon: HandCoins, planned: true },
             { title: 'Reconciliation', href: '/finance/reconciliation', icon: Receipt },
             { title: 'Taxes (VAT)', href: '/finance/taxes', icon: Percent },
             { title: 'Expenses', href: '/finance/expenses', icon: CreditCard },
@@ -261,16 +263,16 @@ const MAIN_ITEMS: NavItem[] = [
         adminOnly: true,
         items: [
             { title: 'Store', href: '/settings/store', icon: Building2 },
-            { title: 'Sales Channels', href: '/settings/channels', icon: Megaphone },
-            { title: 'Staff & Roles', href: '/settings/staff', icon: UserCog },
+            { title: 'Sales Channels', href: '/settings/channels', icon: Megaphone, planned: true },
+            { title: 'Staff & Roles', href: '/settings/staff', icon: UserCog, planned: true },
             { title: 'Payments', href: '/settings/payments', icon: CreditCard },
             { title: 'Shipping', href: '/settings/shipping', icon: Truck },
             { title: 'Integrations', href: '/settings/integrations', icon: Cable },
-            { title: 'Locales & Currency', href: '/settings/locales', icon: Flag },
-            { title: 'Legal', href: '/settings/legal', icon: Files },
-            { title: 'Webhooks & API', href: '/settings/developers', icon: Wrench },
+            { title: 'Locales & Currency', href: '/settings/locales', icon: Flag, planned: true },
+            { title: 'Legal', href: '/settings/legal', icon: Files, planned: true },
+            { title: 'Webhooks & API', href: '/settings/developers', icon: Wrench, planned: true },
             { title: 'Security', href: '/settings/security', icon: LockKeyhole },
-            { title: 'Feature Flags', href: '/settings/features', icon: CheckCheck },
+            { title: 'Feature Flags', href: '/settings/features', icon: CheckCheck, planned: true },
         ],
     },
     {
@@ -280,9 +282,9 @@ const MAIN_ITEMS: NavItem[] = [
         items: [
             { title: 'Users', href: '/system/users', icon: Users },
             { title: 'Storefront Content', href: '/system/storefront', icon: Files },
-            { title: 'Logs', href: '/system/logs', icon: Files },
+            { title: 'Logs', href: '/system/logs', icon: Files, planned: true },
             { title: 'Health', href: '/system/health', icon: Gauge },
-            { title: 'Background Jobs', href: '/system/jobs', icon: ClipboardList },
+            { title: 'Background Jobs', href: '/system/jobs', icon: ClipboardList, planned: true },
         ],
     },
 ];
@@ -424,11 +426,15 @@ export function AppSidebar() {
         const isAdmin = role === 'admin' || (user?.roles && Array.isArray(user.roles) && user.roles.includes('admin'));
         const filterRecursive = (items: NavItem[]): NavItem[] => {
             return items
+                .filter((item) => !item.planned)
                 .filter((item) => !item.adminOnly || isAdmin)
                 .map((item) => ({
                     ...item,
                     items: item.items ? filterRecursive(item.items) : undefined,
-                }));
+                }))
+                // A group whose children were all filtered out has nothing to
+                // link to, so drop it rather than render an empty section.
+                .filter((item) => item.href || (item.items && item.items.length > 0));
         };
         return filterRecursive(MAIN_ITEMS);
     }, [role, user?.roles]);

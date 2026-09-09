@@ -44,7 +44,7 @@ class ReconciliationController extends Controller
                 ['date' => '2025-05-02', 'type' => 'Refund', 'amount' => -75.50, 'status' => 'Matched'],
                 ['date' => '2025-05-05', 'type' => 'Sale', 'amount' => 320.00, 'status' => 'Matched'],
             ],
-        ])->all();
+        ]);
 
         return Inertia::render('finance/reconciliation/show', [
             'reconciliation' => $reconciliation,

@@ -15,7 +15,7 @@ class AbandonedCartController extends Controller
             ['id' => 2, 'customer' => 'Jane Smith', 'email' => 'jane@example.com', 'value' => 325.75, 'items' => 2, 'abandoned_at' => 'May 18, 2025', 'status' => 'recovered'],
             ['id' => 3, 'customer' => 'Bob Johnson', 'email' => 'bob@example.com', 'value' => 890.00, 'items' => 5, 'abandoned_at' => 'May 20, 2025', 'status' => 'pending'],
             ['id' => 4, 'customer' => 'Alice Brown', 'email' => 'alice@example.com', 'value' => 156.25, 'items' => 1, 'abandoned_at' => 'May 15, 2025', 'status' => 'expired'],
-        ])->all();
+        ]);
 
         return Inertia::render('marketing/abandoned-carts/index', [
             'carts' => $carts,

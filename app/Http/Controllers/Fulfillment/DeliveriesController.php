@@ -46,7 +46,7 @@ class DeliveriesController extends Controller
                 ['date' => 'May 19, 2025 3:45 PM', 'location' => 'Memphis, TN', 'status' => 'Picked Up'],
                 ['date' => 'May 18, 2025 2:00 PM', 'location' => 'Origin Facility', 'status' => 'Shipped'],
             ]
-        ])->all();
+        ]);
 
         return Inertia::render('fulfillment/deliveries/show', [
             'delivery' => $delivery,

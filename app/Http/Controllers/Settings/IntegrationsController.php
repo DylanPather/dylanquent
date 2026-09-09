@@ -17,7 +17,7 @@ class IntegrationsController extends Controller
             ['id' => 4, 'name' => 'Mailchimp', 'status' => 'not_connected', 'description' => 'Email marketing automation', 'icon' => 'Mail'],
             ['id' => 5, 'name' => 'Zapier', 'status' => 'not_connected', 'description' => 'Automation & workflows', 'icon' => 'Zap'],
             ['id' => 6, 'name' => 'Klaviyo', 'status' => 'not_connected', 'description' => 'Email & SMS marketing', 'icon' => 'MessageSquare'],
-        ])->all();
+        ]);
 
         return Inertia::render('settings/integrations', [
             'integrations' => $integrations,

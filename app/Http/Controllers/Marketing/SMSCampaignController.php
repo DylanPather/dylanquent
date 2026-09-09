@@ -14,7 +14,7 @@ class SMSCampaignController extends Controller
             ['id' => 1, 'name' => 'Flash Deal - 24 Hours', 'status' => 'active', 'sent' => 5234, 'delivered' => 5100, 'clicks' => 891, 'created_at' => 'May 20, 2025'],
             ['id' => 2, 'name' => 'Order Tracking Update', 'status' => 'active', 'sent' => 3456, 'delivered' => 3401, 'clicks' => 456, 'created_at' => 'May 19, 2025'],
             ['id' => 3, 'name' => 'Back in Stock Alert', 'status' => 'scheduled', 'sent' => 0, 'delivered' => 0, 'clicks' => 0, 'created_at' => 'May 18, 2025'],
-        ])->all();
+        ]);
 
         return Inertia::render('marketing/sms/index', [
             'campaigns' => $campaigns,

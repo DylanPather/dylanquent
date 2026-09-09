@@ -15,7 +15,7 @@ class TicketController extends Controller
             ['id' => 2, 'number' => 'TK-002', 'customer' => 'Jane Smith', 'subject' => 'Product quality concern', 'status' => 'in_progress', 'priority' => 'medium', 'created_at' => 'May 18, 2025'],
             ['id' => 3, 'number' => 'TK-003', 'customer' => 'Bob Johnson', 'subject' => 'Refund request', 'status' => 'resolved', 'priority' => 'high', 'created_at' => 'May 15, 2025'],
             ['id' => 4, 'number' => 'TK-004', 'customer' => 'Alice Brown', 'subject' => 'General inquiry', 'status' => 'closed', 'priority' => 'low', 'created_at' => 'May 10, 2025'],
-        ])->all();
+        ]);
 
         return Inertia::render('support/tickets/index', [
             'tickets' => $tickets,
@@ -44,7 +44,7 @@ class TicketController extends Controller
                 ['author' => 'John Doe', 'message' => 'My order was supposed to arrive 3 days ago but it hasn\'t arrived yet.', 'created_at' => 'May 20, 2025 10:30 AM'],
                 ['author' => 'Support Team', 'message' => 'We apologize for the delay. Let me check the tracking status for you.', 'created_at' => 'May 20, 2025 11:15 AM'],
             ],
-        ])->all();
+        ]);
 
         return Inertia::render('support/tickets/show', [
             'ticket' => $ticket,

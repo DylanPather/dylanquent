@@ -47,7 +47,7 @@ class TaxController extends Controller
                 ['date' => '2025-05-05', 'type' => 'Sale', 'amount' => 6750.50],
                 ['date' => '2025-05-10', 'type' => 'Refund', 'amount' => -500.00],
             ],
-        ])->all();
+        ]);
 
         return Inertia::render('finance/taxes/show', [
             'tax' => $tax,

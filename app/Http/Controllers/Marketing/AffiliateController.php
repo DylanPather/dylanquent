@@ -15,7 +15,7 @@ class AffiliateController extends Controller
             ['id' => 2, 'name' => 'Fashion Influencer', 'email' => 'fashion@insta.com', 'status' => 'active', 'commission' => '15%', 'revenue' => 8950.75, 'clicks' => 892],
             ['id' => 3, 'name' => 'Gaming Channel', 'email' => 'gaming@youtube.com', 'status' => 'pending', 'commission' => '10%', 'revenue' => 0, 'clicks' => 0],
             ['id' => 4, 'name' => 'Lifestyle Blogger', 'email' => 'lifestyle@blog.com', 'status' => 'inactive', 'commission' => '10%', 'revenue' => 5230.00, 'clicks' => 523],
-        ])->all();
+        ]);
 
         return Inertia::render('marketing/affiliates/index', [
             'affiliates' => $affiliates,
@@ -51,7 +51,7 @@ class AffiliateController extends Controller
             'conversions' => 234,
             'conversion_rate' => '18.8%',
             'created_at' => 'March 15, 2025',
-        ])->all();
+        ]);
 
         return Inertia::render('marketing/affiliates/show', [
             'affiliate' => $affiliate,

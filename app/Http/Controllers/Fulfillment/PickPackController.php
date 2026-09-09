@@ -49,7 +49,7 @@ class PickPackController extends Controller
                 'country' => 'South Africa',
                 'postal' => '2000',
             ]
-        ])->all();
+        ]);
 
         return Inertia::render('fulfillment/pick-pack/show', [
             'order' => $order,

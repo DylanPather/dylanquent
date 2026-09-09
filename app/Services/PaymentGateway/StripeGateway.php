@@ -7,17 +7,22 @@ use Stripe\StripeClient;
 
 class StripeGateway implements PaymentGatewayInterface
 {
-    private StripeClient $stripe;
+    private ?StripeClient $stripe = null;
 
-    public function __construct()
+    /**
+     * Built on demand. Constructing StripeClient with an empty key throws,
+     * so eager construction crashed any page that merely type-hinted
+     * PaymentProcessor — including the orders list.
+     */
+    private function client(): StripeClient
     {
-        $this->stripe = new StripeClient(config('services.stripe.secret'));
+        return $this->stripe ??= new StripeClient(config('services.stripe.secret'));
     }
 
     public function initiate(int $amountCents, string $currency, string $orderId, array $metadata = []): array
     {
         try {
-            $intent = $this->stripe->paymentIntents->create([
+            $intent = $this->client()->paymentIntents->create([
                 'amount' => $amountCents,
                 'currency' => strtolower($currency),
                 'metadata' => array_merge(['order_id' => $orderId], $metadata),
@@ -44,7 +49,7 @@ class StripeGateway implements PaymentGatewayInterface
     public function confirm(string $paymentId, string $paymentMethodId = null): array
     {
         try {
-            $intent = $this->stripe->paymentIntents->retrieve($paymentId, [
+            $intent = $this->client()->paymentIntents->retrieve($paymentId, [
                 'expand' => ['payment_method'],
             ]);
 
@@ -84,7 +89,7 @@ class StripeGateway implements PaymentGatewayInterface
     public function refund(string $paymentId, int $amountCents = null): array
     {
         try {
-            $refund = $this->stripe->refunds->create([
+            $refund = $this->client()->refunds->create([
                 'payment_intent' => $paymentId,
                 'amount' => $amountCents,
             ]);

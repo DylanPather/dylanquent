@@ -50,7 +50,7 @@ class ProductPerformanceController extends Controller
                 ['name' => 'Large', 'sold' => 80, 'revenue' => 4000],
             ],
             'daily_sales' => [45, 52, 38, 61, 55, 72, 68, 69, 71, 78, 85, 92],
-        ])->all();
+        ]);
 
         return Inertia::render('analytics/product-performance/show', [
             'product' => $product,

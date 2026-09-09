@@ -13,3 +13,10 @@ bootstrap/cache/*.php
 .claude
 Dockerfile
 docker-compose.yml
+
+# Never ship local dev artifacts: a stray public/hot makes Laravel's @vite
+# emit dev-server URLs (http://[::1]:5173/...) in production, so the page
+# renders blank. public/storage is a symlink to a machine-local path.
+public/hot
+public/storage
+.vercel

@@ -15,7 +15,7 @@ class BlogController extends Controller
             ['id' => 2, 'title' => 'Summer Collection Launch Announcement', 'author' => 'Dylan', 'status' => 'published', 'views' => 2156, 'likes' => 89, 'published_at' => 'May 10, 2025'],
             ['id' => 3, 'title' => 'Behind the Scenes: How We Design', 'author' => 'Dylan', 'status' => 'draft', 'views' => 0, 'likes' => 0, 'published_at' => null],
             ['id' => 4, 'title' => 'Anime TCG Collection Guide', 'author' => 'Dylan', 'status' => 'published', 'views' => 1856, 'likes' => 234, 'published_at' => 'May 01, 2025'],
-        ])->all();
+        ]);
 
         return Inertia::render('cms/blog/index', [
             'posts' => $posts,
@@ -50,7 +50,7 @@ class BlogController extends Controller
             'featured_image' => '/images/blog/hoodie.jpg',
             'tags' => ['fashion', 'hoodies', 'style'],
             'published_at' => '2025-05-15',
-        ])->all();
+        ]);
 
         return Inertia::render('cms/blog/edit', [
             'post' => $post,

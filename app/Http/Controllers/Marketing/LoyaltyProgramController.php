@@ -15,7 +15,7 @@ class LoyaltyProgramController extends Controller
             ['id' => 2, 'name' => 'Jane Smith', 'tier' => 'Silver', 'points' => 1200, 'lifetime_spent' => 2500, 'joined_at' => 'April 01, 2025'],
             ['id' => 3, 'name' => 'Bob Johnson', 'tier' => 'Gold', 'points' => 3850, 'lifetime_spent' => 7200, 'joined_at' => 'February 20, 2025'],
             ['id' => 4, 'name' => 'Alice Brown', 'tier' => 'Bronze', 'points' => 450, 'lifetime_spent' => 750, 'joined_at' => 'May 01, 2025'],
-        ])->all();
+        ]);
 
         return Inertia::render('marketing/loyalty/index', [
             'members' => $members,
@@ -37,7 +37,7 @@ class LoyaltyProgramController extends Controller
             'gold_threshold' => 5000,
             'point_expiry_months' => 12,
             'enabled' => true,
-        ])->all();
+        ]);
 
         return Inertia::render('marketing/loyalty/settings', [
             'settings' => $settings,

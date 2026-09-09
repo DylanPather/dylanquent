@@ -64,7 +64,8 @@ class CustomerController extends Controller
 
         // Stats
         $totalCustomers = Customer::count();
-        $activeCustomers = Customer::withCount('orders')->having('orders_count', '>', 0)->count();
+        // having() without a groupBy is invalid once ->count() wraps the query.
+        $activeCustomers = Customer::has('orders')->count();
         $totalSpent = Order::sum('total_cents') / 100;
         $avgOrderValue = $totalCustomers > 0
             ? Order::sum('total_cents') / Order::count() / 100

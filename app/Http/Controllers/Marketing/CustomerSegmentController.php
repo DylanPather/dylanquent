@@ -15,7 +15,7 @@ class CustomerSegmentController extends Controller
             ['id' => 2, 'name' => 'New Customers', 'size' => 567, 'ltv' => 450, 'status' => 'active', 'created_at' => 'April 01, 2025'],
             ['id' => 3, 'name' => 'At Risk', 'size' => 123, 'ltv' => 800, 'status' => 'active', 'created_at' => 'April 15, 2025'],
             ['id' => 4, 'name' => 'VIP Loyalty', 'size' => 89, 'ltv' => 4200, 'status' => 'active', 'created_at' => 'March 01, 2025'],
-        ])->all();
+        ]);
 
         return Inertia::render('marketing/segments/index', [
             'segments' => $segments,

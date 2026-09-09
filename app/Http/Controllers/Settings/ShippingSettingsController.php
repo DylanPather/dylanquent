@@ -19,7 +19,7 @@ class ShippingSettingsController extends Controller
             'free_shipping_threshold' => 500,
             'free_shipping_enabled' => true,
             'pickup_enabled' => false,
-        ])->all();
+        ]);
 
         return Inertia::render('settings/shipping', [
             'settings' => $settings,
