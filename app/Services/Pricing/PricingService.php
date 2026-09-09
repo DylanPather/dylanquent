@@ -2,6 +2,8 @@
 
 namespace App\Services\Pricing;
 
+use App\Services\Shipping\ShippingRateProvider;
+
 /**
  * Single source of truth for order money.
  *
@@ -10,12 +12,15 @@ namespace App\Services\Pricing;
  */
 class PricingService
 {
+    public function __construct(private ShippingRateProvider $rates) {}
+
     /**
      * @param  int  $subtotalCents  Sum of line totals, before shipping and tax.
+     * @param  string|null  $method  Delivery option key; falls back to the default.
      */
-    public function forSubtotal(int $subtotalCents): OrderTotals
+    public function forSubtotal(int $subtotalCents, ?string $method = null): OrderTotals
     {
-        $shipping = $this->shippingFor($subtotalCents);
+        $shipping = $this->shippingFor($subtotalCents, $method);
         $charged = $subtotalCents + $shipping;
 
         [$tax, $total] = $this->taxFor($charged);
@@ -28,18 +33,29 @@ class PricingService
             taxInclusive: (bool) config('store.tax.inclusive'),
             taxLabel: (string) config('store.tax.label'),
             freeShippingRemainingCents: $this->remainingForFreeShipping($subtotalCents),
+            shippingMethod: $method ?: (string) config('store.shipping.default_method'),
+            shippingOptions: $this->shippingOptions($subtotalCents),
         );
     }
 
-    public function shippingFor(int $subtotalCents): int
+    public function shippingFor(int $subtotalCents, ?string $method = null): int
     {
-        $freeOver = (int) config('store.shipping.free_over_cents');
+        return $this->resolveRate($subtotalCents, $method)?->cents ?? 0;
+    }
 
-        if ($freeOver > 0 && $subtotalCents >= $freeOver) {
-            return 0;
-        }
+    /** Options to show the customer at checkout. */
+    public function shippingOptions(int $subtotalCents): array
+    {
+        return array_map(fn ($r) => $r->toArray(), $this->rates->ratesFor($subtotalCents));
+    }
 
-        return (int) config('store.shipping.flat_cents');
+    private function resolveRate(int $subtotalCents, ?string $method)
+    {
+        $key = $method ?: config('store.shipping.default_method');
+
+        return $this->rates->rate($key, $subtotalCents)
+            // An unknown or withdrawn method must not silently become free.
+            ?? $this->rates->rate(config('store.shipping.default_method'), $subtotalCents);
     }
 
     /**

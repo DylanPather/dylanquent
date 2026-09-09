@@ -32,7 +32,7 @@ class CheckoutController extends Controller
         return Inertia::render('checkout/index', [
             'cart' => $cart,
             'customer' => $customer,
-            'totals' => app(PricingService::class)->forSubtotal($subtotal)->toArray(),
+            'totals' => app(PricingService::class)->forSubtotal($subtotal, session('shipping_method'))->toArray(),
         ]);
     }
 
@@ -110,7 +110,8 @@ class CheckoutController extends Controller
                 ];
             }
 
-            $totals = app(PricingService::class)->forSubtotal($subtotal);
+            // Uses whatever the customer selected in the cart.
+            $totals = app(PricingService::class)->forSubtotal($subtotal, session('shipping_method'));
 
             $order = Order::create([
                 'order_number' => 'ORD-'.strtoupper(Str::random(10)),
@@ -132,6 +133,7 @@ class CheckoutController extends Controller
             }
 
             session()->put('order_id', $order->id);
+            session()->forget('shipping_method');
 
             return redirect()->route('payment.show');
         });

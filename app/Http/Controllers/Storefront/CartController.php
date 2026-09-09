@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use App\Services\Pricing\PricingService;
 
@@ -18,7 +19,9 @@ class CartController extends Controller
 
         return Inertia::render('cart/index', [
             'cart' => $cart,
-            'totals' => app(PricingService::class)->forSubtotal($subtotal)->toArray(),
+            'totals' => app(PricingService::class)
+                ->forSubtotal($subtotal, session('shipping_method'))
+                ->toArray(),
         ]);
     }
 
@@ -85,6 +88,18 @@ class CartController extends Controller
         session()->put('cart', $cart);
 
         return back()->with('success', 'Added to your cart.');
+    }
+
+    /** Remember the delivery option the customer picked. */
+    public function setShippingMethod(Request $request)
+    {
+        $data = $request->validate([
+            'method' => ['required', 'string', Rule::in(array_keys(config('store.shipping.methods', [])))],
+        ]);
+
+        session()->put('shipping_method', $data['method']);
+
+        return back();
     }
 
     public function update(Request $request)

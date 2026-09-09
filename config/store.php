@@ -29,8 +29,29 @@ return [
     ],
 
     'shipping' => [
-        // R80 national flat rate.
-        'flat_cents' => (int) env('STORE_SHIPPING_FLAT_CENTS', 8000),
+        /*
+         | Delivery options offered at checkout, cheapest first.
+         |
+         | Rates reflect South African market pricing as at 2026: economy
+         | door-to-door for a sub-5kg parcel runs roughly R89–R145, while
+         | locker-to-locker (PUDO) starts around R60. An R80 flat rate does
+         | not cover a door-to-door parcel — confirm these against a real
+         | quote from your courier before launch.
+         */
+        'methods' => [
+            'locker' => [
+                'label' => 'Locker collection (PUDO)',
+                'description' => 'Collect from a PUDO locker. 1–3 business days.',
+                'cents' => (int) env('STORE_SHIPPING_LOCKER_CENTS', 6000),
+            ],
+            'door' => [
+                'label' => 'Door-to-door courier',
+                'description' => 'Delivered to your address. 1–3 business days.',
+                'cents' => (int) env('STORE_SHIPPING_DOOR_CENTS', 11000),
+            ],
+        ],
+
+        'default_method' => env('STORE_SHIPPING_DEFAULT', 'door'),
 
         // Free delivery from R1000. Set 0 to disable the threshold.
         'free_over_cents' => (int) env('STORE_SHIPPING_FREE_OVER_CENTS', 100000),

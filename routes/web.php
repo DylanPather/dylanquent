@@ -45,6 +45,7 @@ Route::prefix('cart')->name('cart.')->group(function () {
     Route::post('/add', [StoreCartController::class, 'add'])->name('add');
     Route::post('/update', [StoreCartController::class, 'update'])->name('update');
     Route::post('/remove', [StoreCartController::class, 'remove'])->name('remove');
+    Route::post('/shipping-method', [StoreCartController::class, 'setShippingMethod'])->name('shipping-method');
 });
 
 Route::middleware(['auth'])->group(function () {

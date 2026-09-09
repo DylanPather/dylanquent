@@ -1,8 +1,16 @@
 import StorefrontLayout from '../../layouts/storefront-layout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 import React from 'react';
+
+interface ShippingOption {
+    method: string;
+    label: string;
+    description: string;
+    cents: number;
+    free: boolean;
+}
 
 interface Totals {
     subtotal_cents: number;
@@ -12,6 +20,8 @@ interface Totals {
     tax_inclusive: boolean;
     tax_label: string;
     free_shipping_remaining_cents: number | null;
+    shipping_method: string;
+    shipping_options: ShippingOption[];
 }
 
 interface Props {
@@ -50,10 +60,46 @@ export default function Index({ cart, totals }: Props) {
                                         <span>{money(subtotal)}</span>
                                     </div>
 
-                                    <div className="flex justify-between text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] copy-muted">
-                                        <span>Delivery</span>
-                                        <span>{totals.shipping_cents === 0 ? 'Free' : money(totals.shipping_cents)}</span>
-                                    </div>
+                                    {/* Delivery options — locker is materially cheaper in SA. */}
+                                    {totals.shipping_options?.length > 0 && (
+                                        <fieldset className="space-y-2">
+                                            <legend className="mb-2 text-[12px] font-bold uppercase tracking-[0.1em] copy-muted">
+                                                Delivery
+                                            </legend>
+                                            {totals.shipping_options.map((option) => (
+                                                <label
+                                                    key={option.method}
+                                                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+                                                        totals.shipping_method === option.method
+                                                            ? 'border-foreground'
+                                                            : 'border-border hover:border-foreground/40'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="shipping_method"
+                                                        value={option.method}
+                                                        checked={totals.shipping_method === option.method}
+                                                        onChange={() =>
+                                                            router.post(route('cart.shipping-method'), { method: option.method }, {
+                                                                preserveScroll: true,
+                                                            })
+                                                        }
+                                                        className="mt-1"
+                                                    />
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="flex justify-between gap-2 text-[12px] font-bold uppercase tracking-[0.1em]">
+                                                            <span>{option.label}</span>
+                                                            <span>{option.free ? 'Free' : money(option.cents)}</span>
+                                                        </span>
+                                                        <span className="mt-0.5 block text-[11px] font-light copy-muted normal-case tracking-normal">
+                                                            {option.description}
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </fieldset>
+                                    )}
 
                                     {totals.free_shipping_remaining_cents !== null && (
                                         <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-emerald-600 dark:text-emerald-500">

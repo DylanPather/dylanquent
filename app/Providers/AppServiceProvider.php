@@ -11,6 +11,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Swap this binding for a courier-API provider when live rates are wired.
+        $this->app->bind(
+            \App\Services\Shipping\ShippingRateProvider::class,
+            \App\Services\Shipping\ConfiguredRateProvider::class,
+        );
+
         $this->app->singleton(\App\Services\PaymentGateway\PaymentProcessor::class, function ($app) {
             return new \App\Services\PaymentGateway\PaymentProcessor();
         });

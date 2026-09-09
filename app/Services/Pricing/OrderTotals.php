@@ -15,6 +15,8 @@ readonly class OrderTotals
         public bool $taxInclusive,
         public string $taxLabel,
         public ?int $freeShippingRemainingCents,
+        public string $shippingMethod = 'door',
+        public array $shippingOptions = [],
     ) {}
 
     /** Shape handed to the storefront. */
@@ -28,6 +30,8 @@ readonly class OrderTotals
             'tax_inclusive' => $this->taxInclusive,
             'tax_label' => $this->taxLabel,
             'free_shipping_remaining_cents' => $this->freeShippingRemainingCents,
+            'shipping_method' => $this->shippingMethod,
+            'shipping_options' => $this->shippingOptions,
         ];
     }
 }

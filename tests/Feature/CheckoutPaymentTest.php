@@ -96,7 +96,11 @@ it('rejects confirming an order that belongs to someone else', function () {
 });
 
 it('writes shipping into the order total', function () {
-    config(['store.shipping.flat_cents' => 8000, 'store.shipping.free_over_cents' => 100000]);
+    config([
+        'store.shipping.methods' => ['door' => ['label' => 'Door', 'cents' => 8000]],
+        'store.shipping.default_method' => 'door',
+        'store.shipping.free_over_cents' => 100000,
+    ]);
     [$product, $variant] = shopFixture(10, 4500);
     $user = User::factory()->create();
 
@@ -117,7 +121,11 @@ it('writes shipping into the order total', function () {
 });
 
 it('drops shipping from the order above the threshold', function () {
-    config(['store.shipping.flat_cents' => 8000, 'store.shipping.free_over_cents' => 100000]);
+    config([
+        'store.shipping.methods' => ['door' => ['label' => 'Door', 'cents' => 8000]],
+        'store.shipping.default_method' => 'door',
+        'store.shipping.free_over_cents' => 100000,
+    ]);
     [$product, $variant] = shopFixture(50, 50000);   // R500 each
     $user = User::factory()->create();
 
@@ -134,4 +142,30 @@ it('drops shipping from the order above the threshold', function () {
     expect($order->subtotal_cents)->toBe(100000)
         ->and($order->shipping_total_cents)->toBe(0)
         ->and($order->total_cents)->toBe(100000);
+});
+
+it('carries the chosen delivery method into the order', function () {
+    [$product, $variant] = shopFixture(10, 4500);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->post('/cart/add', [
+        'product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 1,
+    ]);
+    $this->actingAs($user)->post('/cart/shipping-method', ['method' => 'locker']);
+
+    $this->actingAs($user)->post('/checkout', [
+        'shipping_address' => ['line1' => '1 Main Rd'],
+        'billing_address' => ['line1' => '1 Main Rd'],
+    ]);
+
+    $order = Order::first();
+
+    expect($order->shipping_total_cents)->toBe(6000)   // locker, not the R110 door rate
+        ->and($order->total_cents)->toBe(10500);
+});
+
+it('rejects an unknown delivery method', function () {
+    $this->actingAs(User::factory()->create())
+        ->post('/cart/shipping-method', ['method' => 'teleportation'])
+        ->assertSessionHasErrors('method');
 });
