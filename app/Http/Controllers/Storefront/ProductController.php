@@ -74,6 +74,7 @@ class ProductController extends Controller
                     'id' => $v->id,
                     'name' => $v->name ?: 'Standard',
                     'sku' => $v->sku,
+                    'image_url' => $v->image_url,
                     'price_cents' => $v->price_cents ?: $product->price_cents,
                     'compare_at_price_cents' => $v->compare_at_price_cents,
                     'attributes' => $v->attributes,

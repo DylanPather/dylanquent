@@ -18,6 +18,7 @@ interface Variant {
     id: number;
     name: string;
     sku: string;
+    image_url: string | null;
     price_cents: number;
     compare_at_price_cents: number | null;
     attributes: Record<string, string> | null;
@@ -29,7 +30,53 @@ interface Image { id: number; url: string; alt: string }
 interface Review { id: number; rating: number; comment: string; author: string; created_at: string }
 interface Related { id: number; name: string; slug: string; price_cents: number; thumbnail_url: string | null }
 
+interface Design {
+    name: string;
+    blurb: string | null;
+    image: string | null;
+    inStock: boolean;
+}
+
 const LOW_STOCK_AT = 5;
+
+/**
+ * A drop can vary on two axes — the print and the size — so the flat variant
+ * list is split back into them. Products with a single axis (a cap, a tee)
+ * report no designs and keep the plain size picker.
+ */
+function useDesignAxis(variants: Variant[]) {
+    return useMemo(() => {
+        const designs: Design[] = [];
+
+        for (const v of variants) {
+            const name = v.attributes?.design;
+            if (!name) continue;
+
+            const existing = designs.find((d) => d.name === name);
+            if (existing) {
+                existing.inStock = existing.inStock || v.is_available;
+                continue;
+            }
+
+            designs.push({
+                name,
+                blurb: v.attributes?.design_blurb ?? null,
+                image: v.image_url,
+                inStock: v.is_available,
+            });
+        }
+
+        // Sizes are listed in the order the seeder emits them, not alphabetically,
+        // so S/M/L/XL stays in wearable order rather than becoming L/M/S/XL.
+        const sizes: string[] = [];
+        for (const v of variants) {
+            const size = v.attributes?.size;
+            if (size && !sizes.includes(size)) sizes.push(size);
+        }
+
+        return { designs, sizes };
+    }, [variants]);
+}
 
 const money = (cents: number) =>
     'R' + (cents / 100).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -56,6 +103,11 @@ export default function Show() {
 
     const variant = useMemo(() => variants.find((v) => v.id === variantId) ?? null, [variants, variantId]);
 
+    const { designs, sizes } = useDesignAxis(variants);
+    const hasDesigns = designs.length > 0;
+    const design = variant?.attributes?.design ?? null;
+    const size = variant?.attributes?.size ?? null;
+
     const hasVariants = variants.length > 0;
     const price = variant?.price_cents ?? product.price_cents;
     const compareAt = variant?.compare_at_price_cents ?? null;
@@ -68,7 +120,37 @@ export default function Show() {
         setVariantId(v.id);
         setQuantity((q) => Math.min(q, Math.max(1, v.stock)));
         setAdded(false);
+
+        // The gallery follows the print, so the shopper sees what they picked.
+        if (v.image_url) {
+            const i = images.findIndex((img) => img.url === v.image_url);
+            if (i >= 0) setActiveImage(i);
+        }
     };
+
+    /**
+     * Switching print keeps the size the shopper already chose. If that size is
+     * sold out in the new print we move to one that is not, rather than landing
+     * them on a dead "Sold out" button.
+     */
+    const selectDesign = (name: string) => {
+        const inDesign = variants.filter((v) => v.attributes?.design === name);
+        const next =
+            inDesign.find((v) => v.attributes?.size === size && v.is_available) ??
+            inDesign.find((v) => v.is_available) ??
+            inDesign.find((v) => v.attributes?.size === size) ??
+            inDesign[0];
+
+        if (next) selectVariant(next);
+    };
+
+    const selectSize = (value: string) => {
+        const next = variants.find((v) => v.attributes?.design === design && v.attributes?.size === value);
+        if (next) selectVariant(next);
+    };
+
+    const variantFor = (designName: string | null, value: string) =>
+        variants.find((v) => v.attributes?.design === designName && v.attributes?.size === value) ?? null;
 
     const addToCart = () => {
         if (!purchasable || adding) return;
@@ -139,6 +221,66 @@ export default function Show() {
                             </p>
                         </div>
 
+                        {hasDesigns && (
+                            <div className="mb-8 space-y-4 md:mb-10 md:space-y-5">
+                                <div className="flex items-baseline justify-between gap-4">
+                                    <h2 className="text-[12px] font-bold uppercase tracking-[0.16em] copy-muted md:text-[13px]">
+                                        Select print
+                                    </h2>
+                                    <span className="truncate text-[11px] font-bold uppercase tracking-[0.1em] md:text-[12px]">
+                                        {design}
+                                    </span>
+                                </div>
+
+                                <div
+                                    role="radiogroup"
+                                    aria-label="Print"
+                                    className="grid grid-cols-3 gap-3 sm:grid-cols-5 md:gap-4"
+                                >
+                                    {designs.map((d) => {
+                                        const selected = d.name === design;
+                                        return (
+                                            <button
+                                                key={d.name}
+                                                onClick={() => selectDesign(d.name)}
+                                                role="radio"
+                                                aria-checked={selected}
+                                                title={d.inStock ? d.name : `${d.name} — sold out`}
+                                                className={`group space-y-2 rounded-xl border p-1.5 text-left transition-all md:rounded-2xl md:p-2 ${
+                                                    selected
+                                                        ? 'border-foreground ring-1 ring-foreground'
+                                                        : 'border-border hover:border-foreground/50'
+                                                }`}
+                                            >
+                                                <span className="block aspect-square overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-900 md:rounded-xl">
+                                                    <img
+                                                        src={d.image || '/images/placeholder.png'}
+                                                        alt=""
+                                                        loading="lazy"
+                                                        className={`size-full object-cover transition-opacity ${d.inStock ? '' : 'opacity-40'}`}
+                                                    />
+                                                </span>
+                                                <span
+                                                    className={`block px-0.5 pb-0.5 text-[11px] font-bold uppercase leading-tight tracking-[0.08em] md:text-[12px] ${
+                                                        selected ? 'text-foreground' : 'copy-muted'
+                                                    }`}
+                                                >
+                                                    {d.name}
+                                                    {!d.inStock && <span className="block copy-muted">Sold out</span>}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {variant?.attributes?.design_blurb && (
+                                    <p className="text-[13px] font-light leading-relaxed copy-muted md:text-sm">
+                                        {variant.attributes.design_blurb}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {hasVariants && (
                             <div className="mb-8 space-y-4 md:mb-10 md:space-y-5">
                                 <div className="flex items-baseline justify-between">
@@ -152,24 +294,31 @@ export default function Show() {
                                     )}
                                 </div>
                                 <div className="flex flex-wrap gap-3">
-                                    {variants.map((v) => {
-                                        const selected = v.id === variantId;
+                                    {(hasDesigns
+                                        ? sizes.map((value) => ({ value, v: variantFor(design, value) }))
+                                        : variants.map((v) => ({ value: v.name, v }))
+                                    ).map(({ value, v }) => {
+                                        const selected = !!v && v.id === variantId;
+                                        const available = !!v?.is_available;
                                         return (
                                             <button
-                                                key={v.id}
-                                                onClick={() => v.is_available && selectVariant(v)}
-                                                disabled={!v.is_available}
+                                                key={value}
+                                                onClick={() => {
+                                                    if (!available || !v) return;
+                                                    hasDesigns ? selectSize(value) : selectVariant(v);
+                                                }}
+                                                disabled={!available}
                                                 aria-pressed={selected}
-                                                title={v.is_available ? `${v.stock} in stock` : 'Sold out'}
+                                                title={available ? `${v!.stock} in stock` : 'Sold out'}
                                                 className={`relative flex h-12 items-center justify-center rounded-xl border px-6 text-[12px] font-bold uppercase tracking-[0.1em] transition-all md:h-14 md:px-8 ${
-                                                    !v.is_available
+                                                    !available
                                                         ? 'cursor-not-allowed border-border copy-muted line-through opacity-50'
                                                         : selected
                                                           ? 'border-foreground bg-foreground text-background shadow-xl'
                                                           : 'border-border hover:border-foreground'
                                                 }`}
                                             >
-                                                {v.name}
+                                                {value}
                                             </button>
                                         );
                                     })}
