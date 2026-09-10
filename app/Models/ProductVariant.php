@@ -42,6 +42,18 @@ class ProductVariant extends Model
         return $this->hasMany(InventoryLevel::class);
     }
 
+    /**
+     * This variant's angles — front, back, detail — in the order they should
+     * be shown. `image_url` stays the one that leads: cart lines and product
+     * cards need a single shot without loading a gallery to find it.
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class, 'product_variant_id')
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order');
+    }
+
     public function getTotalStockAttribute(): int
     {
         return (int) $this->inventoryLevels()->sum('quantity');

@@ -2,7 +2,7 @@
 
 use App\Models\Product;
 use App\Services\Pricing\PricingService;
-use Database\Seeders\FirstDropSeeder;
+use Database\Seeders\DropSeeder;
 use Database\Seeders\StorefrontProductSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +16,7 @@ function runPriceMigration(): void
 
 it('prices the drop above what the garment costs to make', function () {
     $this->seed(StorefrontProductSeeder::class);
-    $this->seed(FirstDropSeeder::class);
+    $this->seed(DropSeeder::class);
 
     $tee = Product::where('slug', 'boxy-tee')->firstOrFail();
     $hoodie = Product::where('slug', 'heavy-hoodie')->firstOrFail();

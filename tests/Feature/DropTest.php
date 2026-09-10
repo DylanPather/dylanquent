@@ -3,7 +3,7 @@
 use App\Models\Collection;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use Database\Seeders\FirstDropSeeder;
+use Database\Seeders\DropSeeder;
 use Database\Seeders\StorefrontProductSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -11,7 +11,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seed(StorefrontProductSeeder::class);
-    $this->seed(FirstDropSeeder::class);
+    $this->seed(DropSeeder::class);
 });
 
 function drop(string $slug): Product
@@ -91,7 +91,7 @@ it('pins the picker order to the drop, not to row order', function () {
 });
 
 it('is idempotent', function () {
-    $this->seed(FirstDropSeeder::class);
+    $this->seed(DropSeeder::class);
 
     expect(drop('heavy-hoodie')->variants)->toHaveCount(20);
     expect(drop('boxy-tee')->variants)->toHaveCount(40);

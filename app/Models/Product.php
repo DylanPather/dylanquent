@@ -58,7 +58,22 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
+    /**
+     * The product's own gallery.
+     *
+     * Variant angles live in the same table keyed by product_variant_id; they
+     * belong to the variant, not here, or every shot of every print would show
+     * up in the product gallery and in the card previews.
+     */
     public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)
+            ->whereNull('product_variant_id')
+            ->orderBy('sort_order');
+    }
+
+    /** Every shot of this product, its variants' angles included. */
+    public function allImages(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
     }

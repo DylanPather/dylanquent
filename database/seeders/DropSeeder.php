@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\Collection;
 use App\Models\InventoryLevel;
 use App\Models\Product;
@@ -12,7 +13,8 @@ use App\Models\Warehouse;
 use Illuminate\Database\Seeder;
 
 /**
- * First Drop — a hoodie and a tee, each in five prints.
+ * The releases: First Drop (a hoodie and a tee, five prints each) and the
+ * Development Release (a tee printed front and back).
  *
  * The prints are variants rather than separate products: same blank, same
  * fit, same price, so the shopper picks a print, a colour and a size on one
@@ -24,17 +26,25 @@ use Illuminate\Database\Seeder;
  * safe: variants are keyed on SKU and anything outside the current matrix is
  * retired, which is also how a pulled print disappears.
  */
-class FirstDropSeeder extends Seeder
+class DropSeeder extends Seeder
 {
     private const COLOUR_CODES = ['Black' => 'BK', 'White' => 'WT'];
 
     private const IMAGES = '/images/products/first-drop';
+
+    private const DEV = '/images/products/development-release';
 
     private function drops(): array
     {
         return [
             [
                 'slug' => 'heavy-hoodie',
+                'collection' => [
+                    'slug' => 'first-drop',
+                    'name' => 'First Drop',
+                    'description' => 'One hoodie, one tee, five prints each. The opening Dylanquent release.',
+                ],
+
                 'description' => '400GSM brushed-back fleece in black, cut with a boxy shoulder and a heavy '
                     .'rib hem. Five prints in the opening drop — pick yours below.',
                 // One price across the drop. The big body prints cost a little
@@ -97,6 +107,12 @@ class FirstDropSeeder extends Seeder
             ],
             [
                 'slug' => 'boxy-tee',
+                'collection' => [
+                    'slug' => 'first-drop',
+                    'name' => 'First Drop',
+                    'description' => 'One hoodie, one tee, five prints each. The opening Dylanquent release.',
+                ],
+
                 'description' => 'Heavyweight combed cotton, boxy through the body with a dropped shoulder '
                     .'and a ribbed collar. Five prints, in black or white.',
                 // R495 against roughly R290 landed: ~R210 for a 240GSM
@@ -162,6 +178,87 @@ class FirstDropSeeder extends Seeder
                     ],
                 ],
             ],
+            [
+                'slug' => 'development-tee',
+                'name' => 'Development Tee',
+                'sku' => 'DQ-DEV-01',
+                // CatalogSeeder files the products that exist when it runs;
+                // one introduced here has to say where it belongs.
+                'category' => 'tops',
+                'collection' => [
+                    'slug' => 'development-release',
+                    'name' => 'Development Release',
+                    'description' => 'The software division on a shirt. Five prints, front and back.',
+                ],
+                'description' => 'Heavyweight combed cotton, boxy through the body. Printed front and back — '
+                    .'a chest mark and the statement across the shoulders.',
+                'price_cents' => 49500,
+                'colours' => ['Black'],
+                'sizes' => ['S', 'M', 'L', 'XL'],
+                'stock' => ['S' => 6, 'M' => 13, 'L' => 11, 'XL' => 5],
+                'overrides' => [
+                    ['ZN', 'Black', 'XL', 2],
+                    ['NF', 'Black', 'S', 0],
+                    ['WA', 'Black', 'M', 3],
+                ],
+                'designs' => [
+                    [
+                        'code' => 'ZN',
+                        'name' => 'Zero Noise',
+                        'blurb' => 'ZERO NOISE. CLEAN CODE. across the back, the division mark on the chest.',
+                        'images' => [
+                            'Black' => [
+                                ['angle' => 'Back', 'url' => self::DEV.'/tee-zero-noise-back.webp'],
+                                ['angle' => 'Front', 'url' => self::DEV.'/tee-zero-noise-front.webp'],
+                            ],
+                        ],
+                    ],
+                    [
+                        'code' => 'SC',
+                        'name' => 'Source Code',
+                        'blurb' => 'SOURCE / CODE between bracket registration marks. System 01.',
+                        'images' => [
+                            'Black' => [
+                                ['angle' => 'Back', 'url' => self::DEV.'/tee-source-code-back.webp'],
+                                ['angle' => 'Front', 'url' => self::DEV.'/tee-source-code-front.webp'],
+                            ],
+                        ],
+                    ],
+                    [
+                        'code' => 'NF',
+                        'name' => '404 Normal',
+                        'blurb' => 'NORMAL // NOT FOUND under a display 404. Archive 02.',
+                        'images' => [
+                            'Black' => [
+                                ['angle' => 'Back', 'url' => self::DEV.'/tee-404-normal-back.webp'],
+                                ['angle' => 'Front', 'url' => self::DEV.'/tee-404-normal-front.webp'],
+                            ],
+                        ],
+                    ],
+                    [
+                        'code' => 'CM',
+                        'name' => 'Continuous Motion',
+                        'blurb' => 'PUSH, TEST, BUILD, DEPLOY down a pipeline. System 03.',
+                        'images' => [
+                            'Black' => [
+                                ['angle' => 'Back', 'url' => self::DEV.'/tee-continuous-motion-back.webp'],
+                                ['angle' => 'Front', 'url' => self::DEV.'/tee-continuous-motion-front.webp'],
+                            ],
+                        ],
+                    ],
+                    [
+                        'code' => 'WA',
+                        'name' => 'While Alive',
+                        'blurb' => 'while (alive) { create(); } inside an open loop. Prototype 04.',
+                        'images' => [
+                            'Black' => [
+                                ['angle' => 'Back', 'url' => self::DEV.'/tee-while-alive-back.webp'],
+                                ['angle' => 'Front', 'url' => self::DEV.'/tee-while-alive-front.webp'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
 
@@ -171,44 +268,63 @@ class FirstDropSeeder extends Seeder
         return [
             'heavy-hoodie' => self::IMAGES.'/hoodie-zen-geometry.webp',
             'boxy-tee' => self::IMAGES.'/tee-side-whisper-black.webp',
+            'development-tee' => self::DEV.'/tee-zero-noise-back.webp',
         ];
     }
 
     public function run(): void
     {
-        $drops = $this->drops();
-
-        $collection = Collection::updateOrCreate(
-            ['slug' => 'first-drop'],
-            [
-                'name' => 'First Drop',
-                'description' => 'One hoodie, one tee, five prints each. The opening Dylanquent release.',
-                'image_url' => $drops[0]['designs'][0]['images']['Black'],
-                'is_active' => true,
-            ]
-        );
-
         $warehouse = Warehouse::updateOrCreate(
             ['code' => 'JHB-01'],
             ['name' => 'Johannesburg Studio', 'address' => 'Johannesburg, ZA', 'is_active' => true]
         );
 
-        foreach ($drops as $drop) {
+        foreach ($this->drops() as $drop) {
+            $lead = $this->leadShots($drop)[0];
+
+            $collection = Collection::updateOrCreate(
+                ['slug' => $drop['collection']['slug']],
+                [
+                    'name' => $drop['collection']['name'],
+                    'description' => $drop['collection']['description'],
+                    'image_url' => $lead,
+                    'is_active' => true,
+                ]
+            );
+
+            // A drop naming itself is a drop introducing a product that does
+            // not exist yet; the rest attach to what the storefront seeder made.
             $product = Product::where('slug', $drop['slug'])->first();
 
-            if (! $product) {
-                $this->command?->warn("FirstDropSeeder: {$drop['slug']} not found, skipping.");
+            if (! $product && empty($drop['name'])) {
+                $this->command?->warn("DropSeeder: {$drop['slug']} not found, skipping.");
 
                 continue;
             }
 
-            $product->update([
-                'description' => $drop['description'],
-                'price_cents' => $drop['price_cents'],
-                'thumbnail_url' => $this->imagesFor($drop)[0],
-            ]);
+            $product = Product::updateOrCreate(
+                ['slug' => $drop['slug']],
+                array_filter([
+                    'name' => $drop['name'] ?? null,
+                    'sku' => $drop['sku'] ?? null,
+                    'description' => $drop['description'],
+                    'price_cents' => $drop['price_cents'],
+                    'thumbnail_url' => $lead,
+                    'currency' => 'ZAR',
+                    'is_active' => true,
+                ], fn ($value) => $value !== null)
+            );
 
             $product->collections()->syncWithoutDetaching([$collection->id]);
+
+            if (! empty($drop['category'])) {
+                $category = Category::firstOrCreate(
+                    ['slug' => $drop['category']],
+                    ['name' => str($drop['category'])->headline()->toString()]
+                );
+
+                $product->categories()->syncWithoutDetaching([$category->id]);
+            }
 
             $this->replaceGallery($product, $drop);
             $this->replaceVariants($product, $drop, $warehouse);
@@ -217,36 +333,63 @@ class FirstDropSeeder extends Seeder
         $this->featureOnHomepage();
     }
 
-    /** Every print/colour shot, in the order the drop lists them. */
-    private function imagesFor(array $drop): array
+    /**
+     * A design's shots for one colourway, always as a list of angles.
+     *
+     * A drop that shoots one side writes a bare url; one that shoots front and
+     * back writes the angles out. Normalising here keeps both readable in the
+     * definitions above.
+     */
+    private function anglesFor(array $design, string $colour): array
     {
-        $images = [];
+        $shots = $design['images'][$colour] ?? null;
+
+        if (is_string($shots)) {
+            return [['angle' => null, 'url' => $shots]];
+        }
+
+        return $shots ?? [];
+    }
+
+    /** The one shot that leads each print/colour pair, in drop order. */
+    private function leadShots(array $drop): array
+    {
+        $shots = [];
 
         foreach ($drop['designs'] as $design) {
             foreach ($drop['colours'] as $colour) {
-                $images[] = $design['images'][$colour];
+                $angles = $this->anglesFor($design, $colour);
+
+                if ($angles) {
+                    $shots[] = $angles[0]['url'];
+                }
             }
         }
 
-        return $images;
+        return $shots;
     }
 
     /**
-     * The generic inventory seeder gives every product the same three stock
-     * photos; a drop needs its own, in print order.
+     * The product-level gallery: the lead shot of each print/colour pair, in
+     * print order. The generic inventory seeder otherwise gives every product
+     * the same three stock photos.
+     *
+     * Only rows without a variant are touched — a variant's angles live in the
+     * same table and belong to replaceVariants.
      */
     private function replaceGallery(Product $product, array $drop): void
     {
-        $keep = $this->imagesFor($drop);
+        $keep = $this->leadShots($drop);
 
         ProductImage::where('product_id', $product->id)
+            ->whereNull('product_variant_id')
             ->whereNotIn('url', $keep)
             ->delete();
 
         foreach ($keep as $position => $url) {
             ProductImage::updateOrCreate(
-                ['product_id' => $product->id, 'url' => $url],
-                ['is_primary' => $position === 0, 'sort_order' => $position]
+                ['product_id' => $product->id, 'product_variant_id' => null, 'url' => $url],
+                ['is_primary' => $position === 0, 'sort_order' => $position, 'angle' => null]
             );
         }
     }
@@ -263,12 +406,16 @@ class FirstDropSeeder extends Seeder
         foreach ($drop['designs'] as $designOrder => $design) {
             foreach ($drop['colours'] as $colourOrder => $colour) {
                 foreach ($drop['sizes'] as $sizeOrder => $size) {
+                    $angles = $this->anglesFor($design, $colour);
+
                     $variant = ProductVariant::updateOrCreate(
                         ['sku' => $this->sku($product, $design['code'], $colour, $size)],
                         [
                             'product_id' => $product->id,
                             'name' => "{$design['name']} · {$colour} · {$size}",
-                            'image_url' => $design['images'][$colour],
+                            // Denormalised lead shot: cart lines and product
+                            // cards need one image without loading a gallery.
+                            'image_url' => $angles[0]['url'] ?? null,
                             'attributes' => [
                                 'design' => $design['name'],
                                 'design_code' => $design['code'],
@@ -289,12 +436,37 @@ class FirstDropSeeder extends Seeder
                         ]
                     );
 
+                    $this->replaceAngles($product, $variant, $angles);
+
                     InventoryLevel::updateOrCreate(
                         ['product_variant_id' => $variant->id, 'warehouse_id' => $warehouse->id],
                         ['quantity' => $this->stockFor($drop, $design['code'], $colour, $size)]
                     );
                 }
             }
+        }
+    }
+
+    /**
+     * A variant's own angles. Written per variant rather than per print so a
+     * single size can later be shot on its own without special-casing.
+     */
+    private function replaceAngles(Product $product, ProductVariant $variant, array $angles): void
+    {
+        ProductImage::where('product_variant_id', $variant->id)
+            ->whereNotIn('url', array_column($angles, 'url'))
+            ->delete();
+
+        foreach ($angles as $position => $shot) {
+            ProductImage::updateOrCreate(
+                ['product_variant_id' => $variant->id, 'url' => $shot['url']],
+                [
+                    'product_id' => $product->id,
+                    'angle' => $shot['angle'],
+                    'is_primary' => $position === 0,
+                    'sort_order' => $position,
+                ]
+            );
         }
     }
 

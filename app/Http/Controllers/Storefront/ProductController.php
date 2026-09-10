@@ -54,6 +54,7 @@ class ProductController extends Controller
         // Per-product option values live on each variant's `attributes` JSON.
         $product->load([
             'variants.inventoryLevels',
+            'variants.images',
             'categories',
             'reviews' => fn ($q) => $q->where('is_visible', true)->latest()->with('user:id,name'),
             'images',
@@ -78,6 +79,12 @@ class ProductController extends Controller
                     'name' => $v->name ?: 'Standard',
                     'sku' => $v->sku,
                     'image_url' => $v->image_url,
+                    // The angles this variant was shot from. A print that runs
+                    // across the back needs the back and the front, and which
+                    // pair you get depends on the print selected.
+                    'images' => $v->images
+                        ->map(fn ($i) => ['url' => $i->url, 'angle' => $i->angle])
+                        ->values(),
                     'price_cents' => $v->price_cents ?: $product->price_cents,
                     'compare_at_price_cents' => $v->compare_at_price_cents,
                     'attributes' => $v->attributes,

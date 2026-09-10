@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             CatalogSeeder::class,
             StorefrontInventorySeeder::class,
             // Last: takes ownership of the hoodie's variants and gallery.
-            FirstDropSeeder::class,
+            DropSeeder::class,
         ]);
     }
 }

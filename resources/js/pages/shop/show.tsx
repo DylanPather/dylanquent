@@ -20,6 +20,7 @@ interface Variant {
     name: string;
     sku: string;
     image_url: string | null;
+    images: { url: string; angle: string | null }[];
     price_cents: number;
     compare_at_price_cents: number | null;
     attributes: Record<string, string> | null;
@@ -27,7 +28,7 @@ interface Variant {
     is_available: boolean;
 }
 
-interface Image { id: number; url: string; alt: string }
+interface Image { id: number; url: string; alt: string; angle?: string | null }
 interface Review { id: number; rating: number; comment: string; author: string; created_at: string }
 interface Related {
     id: number;
@@ -162,24 +163,40 @@ export default function Show() {
         )?.image_url ?? null;
 
     /**
-     * A print sells in one colourway per photograph, so the gallery is the set
-     * of prints in the colour on screen — five shots, not five times however
-     * many colours. Products without prints keep the images the server sent.
+     * The gallery is the selected variant's own angles.
+     *
+     * A print that runs across the back is two photographs, and which pair you
+     * are looking at follows the print and colour chosen — the swatches above
+     * are how you move between prints, so repeating them here would say the
+     * same thing twice. Variants shot once show one image and no strip;
+     * products with no variant photography keep what the server sent.
      */
     const gallery: Image[] = useMemo(() => {
-        if (!hasDesigns) return images;
+        const angles = variant?.images ?? [];
 
-        return designs
-            .map((d) => ({ name: d.name, url: imageFor(d.name, colour) }))
-            .filter((d): d is { name: string; url: string } => !!d.url)
-            .map((d, i) => ({ id: i, url: d.url, alt: `${product.name} — ${d.name}` }));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasDesigns, designs, colour, images, variants, product.name]);
+        if (angles.length) {
+            return angles.map((shot, i) => ({
+                id: i,
+                url: shot.url,
+                angle: shot.angle,
+                alt: [product.name, variant?.attributes?.design, shot.angle].filter(Boolean).join(' — '),
+            }));
+        }
+
+        if (variant?.image_url) {
+            return [{ id: 0, url: variant.image_url, alt: `${product.name} — ${variant.attributes?.design ?? ''}`.trim() }];
+        }
+
+        return images;
+    }, [variant, images, product.name]);
 
     const activeIndex = Math.max(
         0,
         gallery.findIndex((img) => img.url === activeUrl),
     );
+
+    /** Which angle is on screen right now, so a change of print can hold it. */
+    const activeAngle = gallery[activeIndex]?.angle ?? null;
 
     // Selecting a different option must not leave a now-impossible quantity behind.
     const selectVariant = (v: Variant) => {
@@ -187,8 +204,12 @@ export default function Show() {
         setQuantity((q) => Math.min(q, Math.max(1, v.stock)));
         setAdded(false);
 
-        // The gallery follows the choice, so the shopper sees what they picked.
-        if (v.image_url) setActiveUrl(v.image_url);
+        // The gallery follows the choice, so the shopper sees what they picked
+        // — from the same side they were already looking at. Someone comparing
+        // the backs of five prints should not be sent to the front each time.
+        const sameAngle = activeAngle ? v.images.find((shot) => shot.angle === activeAngle) : null;
+
+        setActiveUrl(sameAngle?.url ?? v.images[0]?.url ?? v.image_url);
     };
 
     /**
@@ -582,7 +603,7 @@ function Gallery({ images, active, onSelect, name }: { images: Image[]; active: 
                 ref={frame}
                 onMouseMove={track}
                 onMouseLeave={() => setZoom(null)}
-                className={`aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-border bg-zinc-100 dark:bg-zinc-900 md:rounded-[2rem] lg:rounded-[2.5rem] ${
+                className={`relative aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-border bg-zinc-100 dark:bg-zinc-900 md:rounded-[2rem] lg:rounded-[2.5rem] ${
                     finePointer ? 'cursor-zoom-in' : ''
                 }`}
             >
@@ -597,6 +618,12 @@ function Gallery({ images, active, onSelect, name }: { images: Image[]; active: 
                             : { transform: 'scale(1)', transformOrigin: 'center' }
                     }
                 />
+
+                {current?.angle && !zoom && (
+                    <span className="pointer-events-none absolute left-4 top-4 rounded-full bg-background/85 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] backdrop-blur-md md:left-6 md:top-6 md:text-[12px]">
+                        {current.angle}
+                    </span>
+                )}
             </motion.div>
 
             {images.length > 1 && (
@@ -605,13 +632,24 @@ function Gallery({ images, active, onSelect, name }: { images: Image[]; active: 
                         <button
                             key={img.url}
                             onClick={() => onSelect(i)}
-                            aria-label={img.alt || `View image ${i + 1} of ${images.length}`}
+                            aria-label={img.angle ? `View ${img.angle.toLowerCase()}` : `View image ${i + 1} of ${images.length}`}
                             aria-pressed={i === active}
-                            className={`aspect-square overflow-hidden rounded-xl border transition-all md:rounded-2xl ${
+                            className={`space-y-1.5 rounded-xl border p-1 transition-all md:rounded-2xl md:p-1.5 ${
                                 i === active ? 'border-foreground ring-1 ring-foreground' : 'border-border hover:border-foreground/50'
                             }`}
                         >
-                            <img src={img.url} alt="" loading="lazy" className="size-full object-cover" />
+                            <span className="block aspect-square overflow-hidden rounded-lg md:rounded-xl">
+                                <img src={img.url} alt="" loading="lazy" className="size-full object-cover" />
+                            </span>
+                            {img.angle && (
+                                <span
+                                    className={`block pb-0.5 text-center text-[11px] font-bold uppercase tracking-[0.1em] ${
+                                        i === active ? 'text-foreground' : 'copy-muted'
+                                    }`}
+                                >
+                                    {img.angle}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
