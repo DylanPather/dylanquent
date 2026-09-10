@@ -37,10 +37,19 @@ class FirstDropSeeder extends Seeder
                 'slug' => 'heavy-hoodie',
                 'description' => '400GSM brushed-back fleece in black, cut with a boxy shoulder and a heavy '
                     .'rib hem. Five prints in the opening drop — pick yours below.',
-                // One price across the drop: every print costs the same to put on
-                // a blank at this run size. Set a variant's own price_cents if
-                // that stops being true.
-                'price_cents' => 8500,
+                // One price across the drop. The big body prints cost a little
+                // more to produce than a chest hit, but averaged over a run of
+                // this size the difference is not worth splitting the price
+                // over — set a variant's own price_cents if that changes.
+                //
+                // R995 against roughly R530 landed: ~R420 for a 400GSM
+                // pullover blank at low volume, ~R75 average print, ~R35 label
+                // and packaging. That is a ~39% gross margin before payment
+                // fees, and it sits under the R1 000 barrier while still
+                // clearing free delivery on its own. Sol-Sol hoodies run
+                // R900–1 200 and We Are Gods R2 499, so an unknown label's
+                // first drop belongs at the lower end of that range.
+                'price_cents' => 99500,
                 'colours' => ['Black'],
                 'sizes' => ['S', 'M', 'L', 'XL'],
                 // Demo counts, deliberately uneven so in-stock, low-stock and
@@ -90,7 +99,11 @@ class FirstDropSeeder extends Seeder
                 'slug' => 'boxy-tee',
                 'description' => 'Heavyweight combed cotton, boxy through the body with a dropped shoulder '
                     .'and a ribbed collar. Five prints, in black or white.',
-                'price_cents' => 4500,
+                // R495 against roughly R290 landed: ~R210 for a 240GSM
+                // oversized blank, ~R55 print, ~R25 label and packaging. Sol-Sol
+                // logo tees are R560–700, so this undercuts the established
+                // local label without dropping into promo-tee territory.
+                'price_cents' => 49500,
                 'colours' => ['Black', 'White'],
                 'sizes' => ['S', 'M', 'L', 'XL'],
                 'stock' => ['S' => 7, 'M' => 14, 'L' => 12, 'XL' => 6],

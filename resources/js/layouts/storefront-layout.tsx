@@ -10,7 +10,11 @@ interface Props {
 }
 
 export default function StorefrontLayout({ children, title }: Props) {
-    const { auth } = usePage<SharedData>().props;
+    // usePage is a hook. It used to be called inline in the badge below, where
+    // the second call sat behind a `&&` — so adding the first item to the cart
+    // changed the hook count from five to six mid-session and React reported a
+    // change in hook order. Read it once, at the top.
+    const { auth, cartCount } = usePage<SharedData>().props;
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -60,9 +64,9 @@ export default function StorefrontLayout({ children, title }: Props) {
                         </button>
                         <Link href={route('cart.index')} className="relative group">
                             <ShoppingBag className="size-5 group-hover:scale-110 transition-transform" />
-                            {usePage<SharedData>().props.cartCount > 0 && (
+                            {cartCount > 0 && (
                                 <span className="absolute -top-2 -right-2 size-5 bg-foreground text-background text-[11px] font-bold leading-none flex items-center justify-center rounded-full">
-                                    {usePage<SharedData>().props.cartCount}
+                                    {cartCount}
                                 </span>
                             )}
                         </Link>

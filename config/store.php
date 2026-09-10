@@ -53,8 +53,15 @@ return [
 
         'default_method' => env('STORE_SHIPPING_DEFAULT', 'door'),
 
-        // Free delivery from R1000. Set 0 to disable the threshold.
-        'free_over_cents' => (int) env('STORE_SHIPPING_FREE_OVER_CENTS', 100000),
+        /*
+         | Free delivery from R900. Set 0 to disable the threshold.
+         |
+         | Sits just under the two natural baskets — one hoodie at R995, two
+         | tees at R990 — so both clear it, while a single tee does not. At
+         | R1 000 a lone hoodie missed free delivery by five rand, which reads
+         | as a trick rather than a threshold.
+         */
+        'free_over_cents' => (int) env('STORE_SHIPPING_FREE_OVER_CENTS', 90000),
 
         /*
          | Live rates from Bob Go, which aggregates The Courier Guy, Pargo,
