@@ -12,7 +12,8 @@ import {
     Star,
     Truck,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import VariantPreview from '../../components/storefront/variant-preview';
 
 interface Variant {
     id: number;
@@ -28,62 +29,80 @@ interface Variant {
 
 interface Image { id: number; url: string; alt: string }
 interface Review { id: number; rating: number; comment: string; author: string; created_at: string }
-interface Related { id: number; name: string; slug: string; price_cents: number; thumbnail_url: string | null }
-
-interface Design {
+interface Related {
+    id: number;
     name: string;
-    blurb: string | null;
-    image: string | null;
+    slug: string;
+    price_cents: number;
+    thumbnail_url: string | null;
+    preview_urls?: string[];
+}
+
+interface Option {
+    name: string;
     order: number;
-    inStock: boolean;
+}
+
+interface Design extends Option {
+    blurb: string | null;
 }
 
 const LOW_STOCK_AT = 5;
 
 /**
- * A drop can vary on two axes — the print and the size — so the flat variant
- * list is split back into them. Products with a single axis (a cap, a tee)
- * report no designs and keep the plain size picker.
+ * Named colours a swatch can paint directly. Anything else falls back to the
+ * name as a CSS colour, which covers "olive", "sand" and friends; a name CSS
+ * cannot resolve just renders as the neutral chip.
  */
-function useDesignAxis(variants: Variant[]) {
+const SWATCHES: Record<string, string> = {
+    Black: '#111111',
+    White: '#ffffff',
+};
+
+/**
+ * A drop varies on up to three axes — print, colour and size — so the flat
+ * variant list is split back into them. Products with a single axis (a cap)
+ * report no prints and no colours, and keep the plain size picker.
+ *
+ * Variants arrive in row order, which is insert order, so renaming or
+ * reordering an option would otherwise shuffle the pickers. Every axis sorts
+ * on the position the drop recorded against the variant.
+ */
+function useOptionAxes(variants: Variant[]) {
     return useMemo(() => {
-        const designs: Design[] = [];
+        const collect = <T extends Option>(
+            key: 'design' | 'colour' | 'size',
+            build: (v: Variant, fallbackOrder: number) => T,
+        ): T[] => {
+            const out: T[] = [];
 
-        for (const v of variants) {
-            const name = v.attributes?.design;
-            if (!name) continue;
-
-            const existing = designs.find((d) => d.name === name);
-            if (existing) {
-                existing.inStock = existing.inStock || v.is_available;
-                continue;
+            for (const v of variants) {
+                const name = v.attributes?.[key];
+                if (!name || out.some((o) => o.name === name)) continue;
+                out.push(build(v, out.length));
             }
 
-            designs.push({
-                name,
-                blurb: v.attributes?.design_blurb ?? null,
-                image: v.image_url,
-                order: Number(v.attributes?.design_order ?? designs.length),
-                inStock: v.is_available,
-            });
-        }
+            return out.sort((a, b) => a.order - b.order);
+        };
 
-        // Sizes run S/M/L/XL, not alphabetically — L/M/S/XL is unreadable on a
-        // size picker.
-        const sizes: { value: string; order: number }[] = [];
-        for (const v of variants) {
-            const value = v.attributes?.size;
-            if (!value || sizes.some((s) => s.value === value)) continue;
-            sizes.push({ value, order: Number(v.attributes?.size_order ?? sizes.length) });
-        }
+        const designs = collect<Design>('design', (v, i) => ({
+            name: v.attributes!.design,
+            blurb: v.attributes?.design_blurb ?? null,
+            order: Number(v.attributes?.design_order ?? i),
+        }));
 
-        // Variants arrive in row order, which is insert order — renaming or
-        // reordering a print later must not shuffle the picker, so both axes
-        // sort on the position the drop recorded.
-        designs.sort((a, b) => a.order - b.order);
-        sizes.sort((a, b) => a.order - b.order);
+        const colours = collect<Option>('colour', (v, i) => ({
+            name: v.attributes!.colour,
+            order: Number(v.attributes?.colour_order ?? i),
+        }));
 
-        return { designs, sizes: sizes.map((s) => s.value) };
+        // Sizes run S/M/L/XL — alphabetical would give L/M/S/XL.
+        const sizes = collect<Option>('size', (v, i) => ({
+            name: v.attributes!.size,
+            order: Number(v.attributes?.size_order ?? i),
+        }));
+
+        return { designs, colours, sizes: sizes.map((o) => o.name) };
     }, [variants]);
 }
 
@@ -102,19 +121,22 @@ export default function Show() {
     };
 
     // Default to the first variant that can actually be bought.
-    const [variantId, setVariantId] = useState<number | null>(
-        variants.find((v) => v.is_available)?.id ?? variants[0]?.id ?? null,
-    );
+    const firstSellable = variants.find((v) => v.is_available) ?? variants[0] ?? null;
+    const [variantId, setVariantId] = useState<number | null>(firstSellable?.id ?? null);
     const [quantity, setQuantity] = useState(1);
-    const [activeImage, setActiveImage] = useState(0);
+    // Tracked by url rather than index: changing colour rebuilds the gallery,
+    // and an index into the old list would point at the wrong shot.
+    const [activeUrl, setActiveUrl] = useState<string | null>(firstSellable?.image_url ?? null);
     const [adding, setAdding] = useState(false);
     const [added, setAdded] = useState(false);
 
     const variant = useMemo(() => variants.find((v) => v.id === variantId) ?? null, [variants, variantId]);
 
-    const { designs, sizes } = useDesignAxis(variants);
+    const { designs, colours, sizes } = useOptionAxes(variants);
     const hasDesigns = designs.length > 0;
+    const hasColours = colours.length > 1;
     const design = variant?.attributes?.design ?? null;
+    const colour = variant?.attributes?.colour ?? null;
     const size = variant?.attributes?.size ?? null;
 
     const hasVariants = variants.length > 0;
@@ -124,42 +146,97 @@ export default function Show() {
     const purchasable = hasVariants ? !!variant?.is_available : true;
     const maxQuantity = hasVariants && variant ? Math.max(1, variant.stock) : 99;
 
+    const variantFor = (designName: string | null, colourName: string | null, sizeName: string | null) =>
+        variants.find(
+            (v) =>
+                v.attributes?.design === designName &&
+                (colourName === null || v.attributes?.colour === colourName) &&
+                v.attributes?.size === sizeName,
+        ) ?? null;
+
+    const imageFor = (designName: string, colourName: string | null) =>
+        variants.find(
+            (v) =>
+                v.attributes?.design === designName &&
+                (colourName === null || v.attributes?.colour === colourName),
+        )?.image_url ?? null;
+
+    /**
+     * A print sells in one colourway per photograph, so the gallery is the set
+     * of prints in the colour on screen — five shots, not five times however
+     * many colours. Products without prints keep the images the server sent.
+     */
+    const gallery: Image[] = useMemo(() => {
+        if (!hasDesigns) return images;
+
+        return designs
+            .map((d) => ({ name: d.name, url: imageFor(d.name, colour) }))
+            .filter((d): d is { name: string; url: string } => !!d.url)
+            .map((d, i) => ({ id: i, url: d.url, alt: `${product.name} — ${d.name}` }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasDesigns, designs, colour, images, variants, product.name]);
+
+    const activeIndex = Math.max(
+        0,
+        gallery.findIndex((img) => img.url === activeUrl),
+    );
+
     // Selecting a different option must not leave a now-impossible quantity behind.
     const selectVariant = (v: Variant) => {
         setVariantId(v.id);
         setQuantity((q) => Math.min(q, Math.max(1, v.stock)));
         setAdded(false);
 
-        // The gallery follows the print, so the shopper sees what they picked.
-        if (v.image_url) {
-            const i = images.findIndex((img) => img.url === v.image_url);
-            if (i >= 0) setActiveImage(i);
-        }
+        // The gallery follows the choice, so the shopper sees what they picked.
+        if (v.image_url) setActiveUrl(v.image_url);
     };
 
     /**
-     * Switching print keeps the size the shopper already chose. If that size is
-     * sold out in the new print we move to one that is not, rather than landing
-     * them on a dead "Sold out" button.
+     * Changing print or colour keeps the size the shopper already chose. Where
+     * that size is sold out in the new combination we move to one that is not,
+     * rather than landing them on a dead "Sold out" button.
      */
-    const selectDesign = (name: string) => {
-        const inDesign = variants.filter((v) => v.attributes?.design === name);
-        const next =
-            inDesign.find((v) => v.attributes?.size === size && v.is_available) ??
-            inDesign.find((v) => v.is_available) ??
-            inDesign.find((v) => v.attributes?.size === size) ??
-            inDesign[0];
+    const pick = (designName: string | null, colourName: string | null) => {
+        const group = variants.filter(
+            (v) =>
+                (designName === null || v.attributes?.design === designName) &&
+                (colourName === null || v.attributes?.colour === colourName),
+        );
 
+        return (
+            group.find((v) => v.attributes?.size === size && v.is_available) ??
+            group.find((v) => v.is_available) ??
+            group.find((v) => v.attributes?.size === size) ??
+            group[0] ??
+            null
+        );
+    };
+
+    const selectDesign = (name: string) => {
+        const next = pick(name, colour);
+        if (next) selectVariant(next);
+    };
+
+    const selectColour = (name: string) => {
+        const next = pick(design, name);
         if (next) selectVariant(next);
     };
 
     const selectSize = (value: string) => {
-        const next = variants.find((v) => v.attributes?.design === design && v.attributes?.size === value);
+        const next = variantFor(design, colour, value);
         if (next) selectVariant(next);
     };
 
-    const variantFor = (designName: string | null, value: string) =>
-        variants.find((v) => v.attributes?.design === designName && v.attributes?.size === value) ?? null;
+    /** Whether anything in this print, or this colour of it, can be bought. */
+    const designInStock = (name: string) =>
+        variants.some(
+            (v) => v.attributes?.design === name && (!colour || v.attributes?.colour === colour) && v.is_available,
+        );
+
+    const colourInStock = (name: string) =>
+        variants.some(
+            (v) => v.attributes?.colour === name && (!design || v.attributes?.design === design) && v.is_available,
+        );
 
     const addToCart = () => {
         if (!purchasable || adding) return;
@@ -190,7 +267,12 @@ export default function Show() {
                 </nav>
 
                 <div className="grid gap-8 md:gap-12 lg:grid-cols-2 lg:gap-20">
-                    <Gallery images={images} active={activeImage} onSelect={setActiveImage} name={product.name} />
+                    <Gallery
+                        images={gallery}
+                        active={activeIndex}
+                        onSelect={(i) => setActiveUrl(gallery[i]?.url ?? null)}
+                        name={product.name}
+                    />
 
                     <div className="flex flex-col">
                         <div className="mb-6 border-b border-border pb-6 md:mb-10 md:pb-10">
@@ -248,13 +330,14 @@ export default function Show() {
                                 >
                                     {designs.map((d) => {
                                         const selected = d.name === design;
+                                        const available = designInStock(d.name);
                                         return (
                                             <button
                                                 key={d.name}
                                                 onClick={() => selectDesign(d.name)}
                                                 role="radio"
                                                 aria-checked={selected}
-                                                title={d.inStock ? d.name : `${d.name} — sold out`}
+                                                title={available ? d.name : `${d.name} — sold out`}
                                                 className={`group space-y-2 rounded-xl border p-1.5 text-left transition-all md:rounded-2xl md:p-2 ${
                                                     selected
                                                         ? 'border-foreground ring-1 ring-foreground'
@@ -263,10 +346,10 @@ export default function Show() {
                                             >
                                                 <span className="block aspect-square overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-900 md:rounded-xl">
                                                     <img
-                                                        src={d.image || '/images/placeholder.png'}
+                                                        src={imageFor(d.name, colour) || '/images/placeholder.png'}
                                                         alt=""
                                                         loading="lazy"
-                                                        className={`size-full object-cover transition-opacity ${d.inStock ? '' : 'opacity-40'}`}
+                                                        className={`size-full object-cover transition-opacity duration-300 ${available ? '' : 'opacity-40'}`}
                                                     />
                                                 </span>
                                                 <span
@@ -275,7 +358,7 @@ export default function Show() {
                                                     }`}
                                                 >
                                                     {d.name}
-                                                    {!d.inStock && <span className="block copy-muted">Sold out</span>}
+                                                    {!available && <span className="block copy-muted">Sold out</span>}
                                                 </span>
                                             </button>
                                         );
@@ -287,6 +370,56 @@ export default function Show() {
                                         {variant.attributes.design_blurb}
                                     </p>
                                 )}
+                            </div>
+                        )}
+
+                        {hasColours && (
+                            <div className="mb-8 space-y-4 md:mb-10 md:space-y-5">
+                                <div className="flex items-baseline justify-between gap-4">
+                                    <h2 className="text-[12px] font-bold uppercase tracking-[0.16em] copy-muted md:text-[13px]">
+                                        Select colour
+                                    </h2>
+                                    <span className="truncate text-[11px] font-bold uppercase tracking-[0.1em] md:text-[12px]">
+                                        {colour}
+                                    </span>
+                                </div>
+
+                                <div role="radiogroup" aria-label="Colour" className="flex flex-wrap gap-3">
+                                    {colours.map((c) => {
+                                        const selected = c.name === colour;
+                                        const available = colourInStock(c.name);
+                                        return (
+                                            <button
+                                                key={c.name}
+                                                onClick={() => selectColour(c.name)}
+                                                role="radio"
+                                                aria-checked={selected}
+                                                title={available ? c.name : `${c.name} — sold out`}
+                                                className={`flex h-12 items-center gap-2.5 rounded-xl border pl-2.5 pr-5 transition-all md:h-14 md:gap-3 md:pl-3 md:pr-6 ${
+                                                    selected
+                                                        ? 'border-foreground ring-1 ring-foreground'
+                                                        : 'border-border hover:border-foreground'
+                                                }`}
+                                            >
+                                                {/* A ring rather than a border, so white stays visible on white. */}
+                                                <span
+                                                    aria-hidden
+                                                    className={`size-6 rounded-full ring-1 ring-inset ring-black/25 dark:ring-white/30 md:size-7 ${
+                                                        available ? '' : 'opacity-40'
+                                                    }`}
+                                                    style={{ background: SWATCHES[c.name] ?? c.name.toLowerCase() }}
+                                                />
+                                                <span
+                                                    className={`text-[12px] font-bold uppercase tracking-[0.1em] ${
+                                                        selected ? 'text-foreground' : 'copy-muted'
+                                                    } ${available ? '' : 'line-through opacity-60'}`}
+                                                >
+                                                    {c.name}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 
@@ -304,7 +437,7 @@ export default function Show() {
                                 </div>
                                 <div className="flex flex-wrap gap-3">
                                     {(hasDesigns
-                                        ? sizes.map((value) => ({ value, v: variantFor(design, value) }))
+                                        ? sizes.map((value) => ({ value, v: variantFor(design, colour, value) }))
                                         : variants.map((v) => ({ value: v.name, v }))
                                     ).map(({ value, v }) => {
                                         const selected = !!v && v.id === variantId;
@@ -417,6 +550,27 @@ export default function Show() {
 
 function Gallery({ images, active, onSelect, name }: { images: Image[]; active: number; onSelect: (i: number) => void; name: string }) {
     const current = images[active] ?? images[0];
+    const frame = useRef<HTMLDivElement>(null);
+    const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
+
+    // Pointer zoom is a mouse affordance: on a touch screen there is no hover
+    // to enter it from, and the pinch gesture already does the job.
+    const finePointer =
+        typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+
+    const track = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!finePointer) return;
+
+        const box = frame.current?.getBoundingClientRect();
+        if (!box) return;
+
+        // Percentages, so transform-origin follows the cursor and the point
+        // under it stays put as the image scales.
+        setZoom({
+            x: ((e.clientX - box.left) / box.width) * 100,
+            y: ((e.clientY - box.top) / box.height) * 100,
+        });
+    };
 
     return (
         <div className="space-y-4 md:space-y-5">
@@ -425,28 +579,39 @@ function Gallery({ images, active, onSelect, name }: { images: Image[]; active: 
                 initial={{ opacity: 0.4 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4 }}
-                className="aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-border bg-zinc-100 dark:bg-zinc-900 md:rounded-[2rem] lg:rounded-[2.5rem]"
+                ref={frame}
+                onMouseMove={track}
+                onMouseLeave={() => setZoom(null)}
+                className={`aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-border bg-zinc-100 dark:bg-zinc-900 md:rounded-[2rem] lg:rounded-[2.5rem] ${
+                    finePointer ? 'cursor-zoom-in' : ''
+                }`}
             >
                 <img
                     src={current?.url || '/images/placeholder.png'}
                     alt={current?.alt || name}
-                    className="size-full object-cover"
+                    draggable={false}
+                    className="size-full object-cover transition-transform duration-300 ease-out will-change-transform"
+                    style={
+                        zoom
+                            ? { transform: 'scale(2)', transformOrigin: `${zoom.x}% ${zoom.y}%` }
+                            : { transform: 'scale(1)', transformOrigin: 'center' }
+                    }
                 />
             </motion.div>
 
             {images.length > 1 && (
-                <div className="grid grid-cols-4 gap-3 md:gap-4">
+                <div className="grid grid-cols-4 gap-3 md:gap-5 lg:grid-cols-5 lg:gap-4">
                     {images.map((img, i) => (
                         <button
-                            key={img.id}
+                            key={img.url}
                             onClick={() => onSelect(i)}
-                            aria-label={`View image ${i + 1} of ${images.length}`}
+                            aria-label={img.alt || `View image ${i + 1} of ${images.length}`}
                             aria-pressed={i === active}
                             className={`aspect-square overflow-hidden rounded-xl border transition-all md:rounded-2xl ${
                                 i === active ? 'border-foreground ring-1 ring-foreground' : 'border-border hover:border-foreground/50'
                             }`}
                         >
-                            <img src={img.url} alt="" className="size-full object-cover" />
+                            <img src={img.url} alt="" loading="lazy" className="size-full object-cover" />
                         </button>
                     ))}
                 </div>
@@ -536,15 +701,14 @@ function RelatedProducts({ related }: { related: Related[] }) {
                 </Link>
             </div>
             <div className="grid grid-cols-2 gap-6 md:gap-8 lg:grid-cols-4">
-                {related.map((p) => (
+                {related.map((p, i) => (
                     <Link key={p.id} href={route('shop.show', p.slug)} className="group space-y-4">
-                        <div className="aspect-[4/5] overflow-hidden rounded-[1.25rem] border border-border bg-zinc-100 dark:bg-zinc-900 md:rounded-[1.75rem]">
-                            <img
-                                src={p.thumbnail_url || '/images/placeholder.png'}
-                                alt={p.name}
-                                className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
-                        </div>
+                        <VariantPreview
+                            images={p.preview_urls?.length ? p.preview_urls : [p.thumbnail_url ?? '']}
+                            alt={p.name}
+                            delay={i * 500}
+                            className="aspect-[4/5] rounded-[1.25rem] border border-border bg-zinc-100 transition-transform duration-700 group-hover:scale-[1.02] dark:bg-zinc-900 md:rounded-[1.75rem]"
+                        />
                         <div className="space-y-1 px-1">
                             <h3 className="text-[13px] font-bold uppercase leading-tight tracking-[0.06em] md:text-sm">{p.name}</h3>
                             <p className="text-sm font-light copy-muted">{money(p.price_cents)}</p>

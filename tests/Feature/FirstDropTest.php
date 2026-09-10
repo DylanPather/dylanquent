@@ -14,86 +14,132 @@ beforeEach(function () {
     $this->seed(FirstDropSeeder::class);
 });
 
+function drop(string $slug): Product
+{
+    return Product::where('slug', $slug)->firstOrFail();
+}
+
 it('builds a print x size matrix on the hoodie', function () {
-    $product = Product::where('slug', 'heavy-hoodie')->first();
+    $product = drop('heavy-hoodie');
 
     expect($product->variants)->toHaveCount(20);
 
-    $designs = $product->variants
-        ->sortBy('attributes.design_order')
-        ->pluck('attributes.design')
-        ->unique()
-        ->values();
+    expect(
+        $product->variants->sortBy('attributes.design_order')->pluck('attributes.design')->unique()->values()->all()
+    )->toBe(['Quiet Mark', 'Vertical Tokyo', 'Zen Geometry', 'Shadow Waifu', 'Moon Waifu']);
 
-    expect($designs->all())->toBe([
-        'Quiet Mark', 'Vertical Tokyo', 'Zen Geometry', 'Shadow Waifu', 'Moon Waifu',
-    ]);
+    // One colourway, so the product page hides the colour picker entirely.
+    expect($product->variants->pluck('attributes.colour')->unique()->all())->toBe(['Black']);
+});
+
+it('builds a print x colour x size matrix on the tee', function () {
+    $product = drop('boxy-tee');
+
+    // 5 prints x 2 colours x 4 sizes.
+    expect($product->variants)->toHaveCount(40);
+
+    expect(
+        $product->variants->sortBy('attributes.design_order')->pluck('attributes.design')->unique()->values()->all()
+    )->toBe(['Sakura Profile', 'Quiet Gaze', 'Vertical Muse', 'Moon Thread', 'Side Whisper']);
+
+    expect(
+        $product->variants->sortBy('attributes.colour_order')->pluck('attributes.colour')->unique()->values()->all()
+    )->toBe(['Black', 'White']);
 
     expect(
         $product->variants->sortBy('attributes.size_order')->pluck('attributes.size')->unique()->values()->all()
     )->toBe(['S', 'M', 'L', 'XL']);
 });
 
-it('pins the picker order to the drop, not to row order', function () {
-    // Renaming a print reuses its row, so insert order stops matching the drop.
-    // The recorded order is what the picker sorts on.
-    $product = Product::where('slug', 'heavy-hoodie')->first();
+it('shoots every print in every colour it sells', function () {
+    $product = drop('boxy-tee');
 
-    $shadow = $product->variants->firstWhere('attributes.design', 'Shadow Waifu');
-    $moon = $product->variants->firstWhere('attributes.design', 'Moon Waifu');
+    expect($product->variants->whereNull('image_url'))->toBeEmpty();
 
-    expect($shadow->attributes['design_order'])->toBe(3)
-        ->and($moon->attributes['design_order'])->toBe(4);
+    // One photograph per print/colour pair, shared by that pair's four sizes.
+    expect($product->variants->pluck('image_url')->unique())->toHaveCount(10);
+    expect($product->images)->toHaveCount(10);
 
-    expect($product->variants->pluck('attributes.size_order')->unique()->sort()->values()->all())
-        ->toBe([0, 1, 2, 3]);
-});
+    // A print's black and white shots must not be the same file.
+    $sakura = $product->variants->where('attributes.design', 'Sakura Profile');
 
-it('gives every variant its own print image', function () {
-    $variants = ProductVariant::whereHas('product', fn ($q) => $q->where('slug', 'heavy-hoodie'))->get();
-
-    expect($variants->whereNull('image_url'))->toBeEmpty();
-
-    // One image per design, shared by that design's four sizes.
-    expect($variants->pluck('image_url')->unique())->toHaveCount(5);
+    expect($sakura->firstWhere('attributes.colour', 'Black')->image_url)
+        ->not->toBe($sakura->firstWhere('attributes.colour', 'White')->image_url);
 });
 
 it('drops the pre-drop size-only variants', function () {
-    $product = Product::where('slug', 'heavy-hoodie')->first();
-
     // StorefrontProductSeeder seeds plain Small/Medium/Large rows first.
-    expect($product->variants->whereIn('name', ['Small', 'Medium', 'Large']))->toBeEmpty();
+    foreach (['heavy-hoodie', 'boxy-tee'] as $slug) {
+        expect(drop($slug)->variants->whereIn('name', ['Small', 'Medium', 'Large', 'Extra Large']))->toBeEmpty();
+    }
+});
+
+it('pins the picker order to the drop, not to row order', function () {
+    // Renaming a print reuses its row, so insert order stops matching the drop.
+    // The recorded order is what the pickers sort on.
+    $product = drop('heavy-hoodie');
+
+    expect($product->variants->firstWhere('attributes.design', 'Shadow Waifu')->attributes['design_order'])->toBe(3)
+        ->and($product->variants->firstWhere('attributes.design', 'Moon Waifu')->attributes['design_order'])->toBe(4);
+
+    $tee = drop('boxy-tee');
+
+    expect($tee->variants->firstWhere('attributes.colour', 'Black')->attributes['colour_order'])->toBe(0)
+        ->and($tee->variants->firstWhere('attributes.colour', 'White')->attributes['colour_order'])->toBe(1);
+
+    expect($tee->variants->pluck('attributes.size_order')->unique()->sort()->values()->all())->toBe([0, 1, 2, 3]);
 });
 
 it('is idempotent', function () {
     $this->seed(FirstDropSeeder::class);
 
-    expect(Product::where('slug', 'heavy-hoodie')->first()->variants)->toHaveCount(20);
+    expect(drop('heavy-hoodie')->variants)->toHaveCount(20);
+    expect(drop('boxy-tee')->variants)->toHaveCount(40);
+    expect(drop('boxy-tee')->images)->toHaveCount(10);
     expect(Collection::where('slug', 'first-drop')->count())->toBe(1);
 });
 
-it('puts the hoodie in the First Drop collection with a five-shot gallery', function () {
-    $product = Product::where('slug', 'heavy-hoodie')->first();
-
-    expect($product->collections->pluck('slug'))->toContain('first-drop');
-    expect($product->images)->toHaveCount(5);
-    expect($product->images->where('is_primary', true))->toHaveCount(1);
+it('collects both drops under First Drop', function () {
+    foreach (['heavy-hoodie', 'boxy-tee'] as $slug) {
+        expect(drop($slug)->collections->pluck('slug'))->toContain('first-drop');
+        expect(drop($slug)->images->where('is_primary', true))->toHaveCount(1);
+    }
 });
 
-it('exposes the design axis to the product page', function () {
-    $this->get('/shop/heavy-hoodie')
+it('exposes every axis to the product page', function () {
+    $this->get('/shop/boxy-tee')
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('shop/show')
-            ->has('variants', 20)
-            ->where('variants.0.attributes.design', 'Quiet Mark')
+            ->has('variants', 40)
+            ->where('variants.0.attributes.design', 'Sakura Profile')
+            ->where('variants.0.attributes.colour', 'Black')
             ->where('variants.0.attributes.size', 'S')
             ->whereNot('variants.0.image_url', null)
-            ->has('images', 5));
+            ->has('images', 10));
 });
 
-it('carries the chosen print onto the cart line', function () {
-    $variant = ProductVariant::where('sku', 'DQ-HD-01-SW-M')->firstOrFail();
+it('gives cards the shots they need to cycle', function () {
+    $this->get('/shop')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('shop/index')
+            ->has('products.data.0.preview_urls'));
+
+    // Related products carry them too, so the strip below a product also cycles.
+    $this->get('/shop/heavy-hoodie')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('related.0.preview_urls'));
+
+    $tee = $this->get('/shop')->viewData('page')['props']['products']['data'];
+    $card = collect($tee)->firstWhere('slug', 'boxy-tee');
+
+    // Capped at six: a card is a glance, not the gallery.
+    expect($card['preview_urls'])->toHaveCount(6);
+});
+
+it('carries the chosen print and colour onto the cart line', function () {
+    $variant = ProductVariant::where('sku', 'DQ-TEE-01-SD-WT-M')->firstOrFail();
 
     $this->post('/cart/add', [
         'product_id' => $variant->product_id,
@@ -103,12 +149,12 @@ it('carries the chosen print onto the cart line', function () {
 
     $line = collect(session('cart'))->firstWhere('variant_id', $variant->id);
 
-    expect($line['name'])->toContain('Shadow Waifu');
+    expect($line['name'])->toContain('Side Whisper')->toContain('White');
     expect($line['thumbnail_url'])->toBe($variant->image_url);
 });
 
-it('refuses a sold-out print and size', function () {
-    $variant = ProductVariant::where('sku', 'DQ-HD-01-MW-S')->firstOrFail();
+it('refuses a sold-out print, colour and size', function () {
+    $variant = ProductVariant::where('sku', 'DQ-TEE-01-SP-WT-S')->firstOrFail();
 
     expect($variant->inventoryLevels->sum('quantity'))->toBe(0);
 
@@ -119,4 +165,8 @@ it('refuses a sold-out print and size', function () {
     ])->assertSessionHasErrors('quantity');
 
     expect(session('cart'))->toBeNull();
+
+    // The same print in black is unaffected.
+    expect(ProductVariant::where('sku', 'DQ-TEE-01-SP-BK-S')->firstOrFail()->inventoryLevels->sum('quantity'))
+        ->toBeGreaterThan(0);
 });

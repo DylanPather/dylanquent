@@ -32,7 +32,10 @@ class ProductController extends Controller
                     'slug' => $p->slug,
                     'price_cents' => $p->price_cents,
                     'currency' => $p->currency,
-                    'thumbnail_url' => $p->images()->where('is_primary', true)->first()?->url ?? $p->thumbnail_url,
+                    'thumbnail_url' => $p->images->firstWhere('is_primary', true)?->url ?? $p->thumbnail_url,
+                    // The card is unreadable for a five-print drop with one shot.
+                    'preview_urls' => $this->previewUrls($p),
+                    'categories' => $p->categories->pluck('name'),
                     'is_available' => $p->variants->some(fn($v) => $v->inventoryLevels->sum('quantity') > 0),
                 ];
             });
@@ -151,6 +154,35 @@ class ProductController extends Controller
             'thumbnail_url' => $p->images->firstWhere('is_primary', true)?->url
                 ?? $p->images->first()?->url
                 ?? $p->thumbnail_url,
+            'preview_urls' => $this->previewUrls($p),
         ])->values();
+    }
+
+    /**
+     * The shots a card cycles through: one per variant image, in variant order,
+     * falling back to the gallery for products whose variants share a photo.
+     *
+     * Capped because a card is a glance, not the gallery — six shots at ~2.5
+     * seconds each is already fifteen seconds to see them all.
+     */
+    private function previewUrls(Product $p, int $limit = 6)
+    {
+        $fromVariants = $p->variants
+            ->pluck('image_url')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($fromVariants->isNotEmpty()) {
+            return $fromVariants->take($limit);
+        }
+
+        return $p->images
+            ->sortBy([['is_primary', 'desc'], ['sort_order', 'asc']])
+            ->pluck('url')
+            ->filter()
+            ->unique()
+            ->take($limit)
+            ->values();
     }
 }

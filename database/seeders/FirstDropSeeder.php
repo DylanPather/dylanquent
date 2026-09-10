@@ -12,115 +12,317 @@ use App\Models\Warehouse;
 use Illuminate\Database\Seeder;
 
 /**
- * First Drop — one hoodie blank, five prints.
+ * First Drop — a hoodie and a tee, each in five prints.
  *
- * The designs are variants rather than separate products: same 400GSM body,
- * same fit, same price, so the shopper picks a print and a size on one page.
- * Each design carries its own `image_url` (Shopify-style variant image) and the
- * gallery follows the selection.
+ * The prints are variants rather than separate products: same blank, same
+ * fit, same price, so the shopper picks a print, a colour and a size on one
+ * page. Every print/colour pair carries its own photograph (Shopify-style
+ * variant image) and the gallery follows the selection.
  *
- * Runs last in DatabaseSeeder because it takes ownership of the hoodie's
- * variants and gallery from the generic storefront seeders.
+ * Runs last in DatabaseSeeder because it takes ownership of these products'
+ * variants and galleries from the generic storefront seeders. Re-running is
+ * safe: variants are keyed on SKU and anything outside the current matrix is
+ * retired, which is also how a pulled print disappears.
  */
 class FirstDropSeeder extends Seeder
 {
-    /**
-     * One price for the whole drop. Every design costs the same to print at
-     * this run size, so there is no per-design uplift — set `price_cents` on an
-     * individual variant below if that changes.
-     */
-    private const PRICE_CENTS = 8500;
+    private const COLOUR_CODES = ['Black' => 'BK', 'White' => 'WT'];
 
-    private const SIZES = ['S', 'M', 'L', 'XL'];
+    private const IMAGES = '/images/products/first-drop';
 
-    /**
-     * Deliberately uneven so in-stock, low-stock and sold-out all appear
-     * without hand-editing rows. Replace with real counts before launch.
-     */
-    private const STOCK = [
-        'QM' => ['S' => 8,  'M' => 14, 'L' => 12, 'XL' => 6],
-        'VT' => ['S' => 5,  'M' => 10, 'L' => 9,  'XL' => 4],
-        'ZG' => ['S' => 3,  'M' => 11, 'L' => 7,  'XL' => 5],
-        'SW' => ['S' => 2,  'M' => 9,  'L' => 8,  'XL' => 0],
-        'MW' => ['S' => 0,  'M' => 7,  'L' => 6,  'XL' => 3],
-    ];
-
-    private function designs(): array
+    private function drops(): array
     {
         return [
             [
-                'code' => 'QM',
-                'name' => 'Quiet Mark',
-                'blurb' => 'Small chest wordmark with the archive stamp. The whole drop in one line.',
-                'image' => '/images/products/first-drop/hoodie-quiet-mark.webp',
+                'slug' => 'heavy-hoodie',
+                'description' => '400GSM brushed-back fleece in black, cut with a boxy shoulder and a heavy '
+                    .'rib hem. Five prints in the opening drop — pick yours below.',
+                // One price across the drop: every print costs the same to put on
+                // a blank at this run size. Set a variant's own price_cents if
+                // that stops being true.
+                'price_cents' => 8500,
+                'colours' => ['Black'],
+                'sizes' => ['S', 'M', 'L', 'XL'],
+                // Demo counts, deliberately uneven so in-stock, low-stock and
+                // sold-out all appear without hand-editing rows. Replace with
+                // real inventory before launch.
+                'stock' => ['S' => 5, 'M' => 11, 'L' => 9, 'XL' => 5],
+                'overrides' => [
+                    ['ZG', 'Black', 'S', 3],
+                    ['SW', 'Black', 'XL', 0],
+                    ['MW', 'Black', 'S', 0],
+                    ['QM', 'Black', 'M', 14],
+                ],
+                'designs' => [
+                    [
+                        'code' => 'QM',
+                        'name' => 'Quiet Mark',
+                        'blurb' => 'Small chest wordmark with the archive stamp. The whole drop in one line.',
+                        'images' => ['Black' => self::IMAGES.'/hoodie-quiet-mark.webp'],
+                    ],
+                    [
+                        'code' => 'VT',
+                        'name' => 'Vertical Tokyo',
+                        'blurb' => 'Katakana set vertically against an open circle, left chest.',
+                        'images' => ['Black' => self::IMAGES.'/hoodie-vertical-tokyo.webp'],
+                    ],
+                    [
+                        'code' => 'ZG',
+                        'name' => 'Zen Geometry',
+                        'blurb' => 'Centred brush crescent under the wordmark. The loudest of the five.',
+                        'images' => ['Black' => self::IMAGES.'/hoodie-zen-geometry.webp'],
+                    ],
+                    [
+                        'code' => 'SW',
+                        'name' => 'Shadow Waifu',
+                        'blurb' => 'Crescent-framed portrait with a red seal, right chest.',
+                        'images' => ['Black' => self::IMAGES.'/hoodie-shadow-waifu.webp'],
+                    ],
+                    [
+                        'code' => 'MW',
+                        'name' => 'Moon Waifu',
+                        'blurb' => 'Oversized tonal portrait printed black-on-black down the body.',
+                        'images' => ['Black' => self::IMAGES.'/hoodie-moon-waifu.webp'],
+                    ],
+                ],
             ],
             [
-                'code' => 'VT',
-                'name' => 'Vertical Tokyo',
-                'blurb' => 'Katakana set vertically against an open circle, left chest.',
-                'image' => '/images/products/first-drop/hoodie-vertical-tokyo.webp',
+                'slug' => 'boxy-tee',
+                'description' => 'Heavyweight combed cotton, boxy through the body with a dropped shoulder '
+                    .'and a ribbed collar. Five prints, in black or white.',
+                'price_cents' => 4500,
+                'colours' => ['Black', 'White'],
+                'sizes' => ['S', 'M', 'L', 'XL'],
+                'stock' => ['S' => 7, 'M' => 14, 'L' => 12, 'XL' => 6],
+                'overrides' => [
+                    ['SP', 'White', 'S', 0],
+                    ['QG', 'Black', 'XL', 2],
+                    ['VM', 'White', 'M', 0],
+                    ['MT', 'White', 'XL', 0],
+                    ['SD', 'Black', 'S', 3],
+                ],
+                'designs' => [
+                    [
+                        'code' => 'SP',
+                        'name' => 'Sakura Profile',
+                        'blurb' => 'Side profile with blossom in the hair, right chest, under a red seal.',
+                        'images' => [
+                            'Black' => self::IMAGES.'/tee-sakura-profile-black.webp',
+                            'White' => self::IMAGES.'/tee-sakura-profile-white.webp',
+                        ],
+                    ],
+                    [
+                        'code' => 'QG',
+                        'name' => 'Quiet Gaze',
+                        'blurb' => 'Cropped eyes inside a brush circle, centred over the wordmark.',
+                        'images' => [
+                            'Black' => self::IMAGES.'/tee-quiet-gaze-black.webp',
+                            'White' => self::IMAGES.'/tee-quiet-gaze-white.webp',
+                        ],
+                    ],
+                    [
+                        'code' => 'VM',
+                        'name' => 'Vertical Muse',
+                        'blurb' => 'Standing figure framed beside a katakana column, right chest.',
+                        'images' => [
+                            'Black' => self::IMAGES.'/tee-vertical-muse-black.webp',
+                            'White' => self::IMAGES.'/tee-vertical-muse-white.webp',
+                        ],
+                    ],
+                    [
+                        'code' => 'MT',
+                        'name' => 'Moon Thread',
+                        'blurb' => 'Crescent-backed portrait with a single red block, right chest.',
+                        'images' => [
+                            'Black' => self::IMAGES.'/tee-moon-thread-black.webp',
+                            'White' => self::IMAGES.'/tee-moon-thread-white.webp',
+                        ],
+                    ],
+                    [
+                        'code' => 'SD',
+                        'name' => 'Side Whisper',
+                        'blurb' => 'Full-length figure printed tonally down the body, wordmark on the chest.',
+                        'images' => [
+                            'Black' => self::IMAGES.'/tee-side-whisper-black.webp',
+                            'White' => self::IMAGES.'/tee-side-whisper-white.webp',
+                        ],
+                    ],
+                ],
             ],
-            [
-                'code' => 'ZG',
-                'name' => 'Zen Geometry',
-                'blurb' => 'Centred brush crescent under the wordmark. The loudest of the five.',
-                'image' => '/images/products/first-drop/hoodie-zen-geometry.webp',
-            ],
-            [
-                'code' => 'SW',
-                'name' => 'Shadow Waifu',
-                'blurb' => 'Crescent-framed portrait with a red seal, right chest.',
-                'image' => '/images/products/first-drop/hoodie-shadow-waifu.webp',
-            ],
-            [
-                'code' => 'MW',
-                'name' => 'Moon Waifu',
-                'blurb' => 'Oversized tonal portrait printed black-on-black down the body.',
-                'image' => '/images/products/first-drop/hoodie-moon-waifu.webp',
-            ],
+        ];
+    }
+
+    /** The shot that carries each product on the merch landing. */
+    private function heroes(): array
+    {
+        return [
+            'heavy-hoodie' => self::IMAGES.'/hoodie-zen-geometry.webp',
+            'boxy-tee' => self::IMAGES.'/tee-side-whisper-black.webp',
         ];
     }
 
     public function run(): void
     {
-        $product = Product::where('slug', 'heavy-hoodie')->first();
-
-        if (! $product) {
-            $this->command?->warn('FirstDropSeeder: heavy-hoodie product not found, skipping.');
-
-            return;
-        }
-
-        $designs = $this->designs();
+        $drops = $this->drops();
 
         $collection = Collection::updateOrCreate(
             ['slug' => 'first-drop'],
             [
                 'name' => 'First Drop',
-                'description' => 'One hoodie. Five prints. The opening Dylanquent release.',
-                'image_url' => $designs[0]['image'],
+                'description' => 'One hoodie, one tee, five prints each. The opening Dylanquent release.',
+                'image_url' => $drops[0]['designs'][0]['images']['Black'],
                 'is_active' => true,
             ]
         );
 
-        $product->update([
-            'description' => '400GSM brushed-back fleece in black, cut with a boxy shoulder and a heavy rib hem. '
-                .'Five prints in the opening drop — pick yours below.',
-            'thumbnail_url' => $designs[0]['image'],
-        ]);
+        $warehouse = Warehouse::updateOrCreate(
+            ['code' => 'JHB-01'],
+            ['name' => 'Johannesburg Studio', 'address' => 'Johannesburg, ZA', 'is_active' => true]
+        );
 
-        $product->collections()->syncWithoutDetaching([$collection->id]);
+        foreach ($drops as $drop) {
+            $product = Product::where('slug', $drop['slug'])->first();
 
-        $this->replaceGallery($product, $designs);
-        $this->replaceVariants($product, $designs);
-        $this->featureOnHomepage($designs);
+            if (! $product) {
+                $this->command?->warn("FirstDropSeeder: {$drop['slug']} not found, skipping.");
+
+                continue;
+            }
+
+            $product->update([
+                'description' => $drop['description'],
+                'price_cents' => $drop['price_cents'],
+                'thumbnail_url' => $this->imagesFor($drop)[0],
+            ]);
+
+            $product->collections()->syncWithoutDetaching([$collection->id]);
+
+            $this->replaceGallery($product, $drop);
+            $this->replaceVariants($product, $drop, $warehouse);
+        }
+
+        $this->featureOnHomepage();
+    }
+
+    /** Every print/colour shot, in the order the drop lists them. */
+    private function imagesFor(array $drop): array
+    {
+        $images = [];
+
+        foreach ($drop['designs'] as $design) {
+            foreach ($drop['colours'] as $colour) {
+                $images[] = $design['images'][$colour];
+            }
+        }
+
+        return $images;
     }
 
     /**
-     * The merch landing still pointed at the old grey hoodie render. Swap that
-     * one card's art for the drop; the rest of the featured edit is untouched.
+     * The generic inventory seeder gives every product the same three stock
+     * photos; a drop needs its own, in print order.
      */
-    private function featureOnHomepage(array $designs): void
+    private function replaceGallery(Product $product, array $drop): void
+    {
+        $keep = $this->imagesFor($drop);
+
+        ProductImage::where('product_id', $product->id)
+            ->whereNotIn('url', $keep)
+            ->delete();
+
+        foreach ($keep as $position => $url) {
+            ProductImage::updateOrCreate(
+                ['product_id' => $product->id, 'url' => $url],
+                ['is_primary' => $position === 0, 'sort_order' => $position]
+            );
+        }
+    }
+
+    private function replaceVariants(Product $product, array $drop, Warehouse $warehouse): void
+    {
+        // Plain size-only rows predate the drop and carry no print, so they
+        // would show up as unlabelled extra options. Anything outside the
+        // current matrix goes, which also retires a print that was pulled.
+        $product->variants()
+            ->whereNotIn('sku', $this->expectedSkus($product, $drop))
+            ->delete();
+
+        foreach ($drop['designs'] as $designOrder => $design) {
+            foreach ($drop['colours'] as $colourOrder => $colour) {
+                foreach ($drop['sizes'] as $sizeOrder => $size) {
+                    $variant = ProductVariant::updateOrCreate(
+                        ['sku' => $this->sku($product, $design['code'], $colour, $size)],
+                        [
+                            'product_id' => $product->id,
+                            'name' => "{$design['name']} · {$colour} · {$size}",
+                            'image_url' => $design['images'][$colour],
+                            'attributes' => [
+                                'design' => $design['name'],
+                                'design_code' => $design['code'],
+                                'design_blurb' => $design['blurb'],
+                                'colour' => $colour,
+                                'size' => $size,
+                                // Rows keep the ids they were first written with,
+                                // so renaming or reordering an option would leave
+                                // the pickers in insert order. Carry the intent.
+                                'design_order' => $designOrder,
+                                'colour_order' => $colourOrder,
+                                'size_order' => $sizeOrder,
+                            ],
+                            'price_cents' => $drop['price_cents'],
+                            'track_inventory' => true,
+                            'low_stock_threshold' => 3,
+                            'is_active' => true,
+                        ]
+                    );
+
+                    InventoryLevel::updateOrCreate(
+                        ['product_variant_id' => $variant->id, 'warehouse_id' => $warehouse->id],
+                        ['quantity' => $this->stockFor($drop, $design['code'], $colour, $size)]
+                    );
+                }
+            }
+        }
+    }
+
+    private function sku(Product $product, string $designCode, string $colour, string $size): string
+    {
+        $colourCode = self::COLOUR_CODES[$colour] ?? strtoupper(substr($colour, 0, 2));
+
+        return "{$product->sku}-{$designCode}-{$colourCode}-{$size}";
+    }
+
+    private function expectedSkus(Product $product, array $drop): array
+    {
+        $skus = [];
+
+        foreach ($drop['designs'] as $design) {
+            foreach ($drop['colours'] as $colour) {
+                foreach ($drop['sizes'] as $size) {
+                    $skus[] = $this->sku($product, $design['code'], $colour, $size);
+                }
+            }
+        }
+
+        return $skus;
+    }
+
+    private function stockFor(array $drop, string $designCode, string $colour, string $size): int
+    {
+        foreach ($drop['overrides'] ?? [] as [$code, $overrideColour, $overrideSize, $quantity]) {
+            if ($code === $designCode && $overrideColour === $colour && $overrideSize === $size) {
+                return $quantity;
+            }
+        }
+
+        return $drop['stock'][$size];
+    }
+
+    /**
+     * The merch landing still pointed at the pre-drop renders. Swap those
+     * cards' art; the rest of the featured edit is untouched.
+     */
+    private function featureOnHomepage(): void
     {
         $setting = StorefrontSetting::where('key', 'featured_products')->first();
 
@@ -134,97 +336,17 @@ class FirstDropSeeder extends Seeder
             return;
         }
 
-        // Zen Geometry is the centred print, so it reads at hero scale.
-        $hero = collect($designs)->firstWhere('code', 'ZG')['image'] ?? $designs[0]['image'];
+        $heroes = $this->heroes();
 
         foreach ($featured as &$item) {
-            if (($item['slug'] ?? null) === 'heavy-hoodie') {
+            $hero = $heroes[$item['slug'] ?? ''] ?? null;
+
+            if ($hero) {
                 $item['image'] = $hero;
             }
         }
         unset($item);
 
         $setting->update(['value' => json_encode($featured)]);
-    }
-
-    /**
-     * The generic inventory seeder gives every product the same three stock
-     * photos; the drop needs its own five, in design order.
-     */
-    private function replaceGallery(Product $product, array $designs): void
-    {
-        $keep = array_column($designs, 'image');
-
-        ProductImage::where('product_id', $product->id)
-            ->whereNotIn('url', $keep)
-            ->delete();
-
-        foreach ($designs as $position => $design) {
-            ProductImage::updateOrCreate(
-                ['product_id' => $product->id, 'url' => $design['image']],
-                ['is_primary' => $position === 0, 'sort_order' => $position]
-            );
-        }
-    }
-
-    private function replaceVariants(Product $product, array $designs): void
-    {
-        $warehouse = Warehouse::updateOrCreate(
-            ['code' => 'JHB-01'],
-            ['name' => 'Johannesburg Studio', 'address' => 'Johannesburg, ZA', 'is_active' => true]
-        );
-
-        // The plain Small/Medium/Large rows predate the drop and carry no
-        // design, so they would show up as unlabelled extra options. Anything
-        // outside the current matrix goes, which also retires a pulled design.
-        $product->variants()
-            ->whereNotIn('sku', $this->expectedSkus($product, $designs))
-            ->delete();
-
-        foreach ($designs as $designOrder => $design) {
-            foreach (self::SIZES as $sizeOrder => $size) {
-                $variant = ProductVariant::updateOrCreate(
-                    ['sku' => "{$product->sku}-{$design['code']}-{$size}"],
-                    [
-                        'product_id' => $product->id,
-                        'name' => "{$design['name']} · {$size}",
-                        'image_url' => $design['image'],
-                        'attributes' => [
-                            'design' => $design['name'],
-                            'design_code' => $design['code'],
-                            'design_blurb' => $design['blurb'],
-                            'size' => $size,
-                            // Rows keep the ids they were first written with, so
-                            // renaming or reordering a print would otherwise leave
-                            // the picker in insert order. Carry the intended order.
-                            'design_order' => $designOrder,
-                            'size_order' => $sizeOrder,
-                        ],
-                        'price_cents' => self::PRICE_CENTS,
-                        'track_inventory' => true,
-                        'low_stock_threshold' => 3,
-                        'is_active' => true,
-                    ]
-                );
-
-                InventoryLevel::updateOrCreate(
-                    ['product_variant_id' => $variant->id, 'warehouse_id' => $warehouse->id],
-                    ['quantity' => self::STOCK[$design['code']][$size]]
-                );
-            }
-        }
-    }
-
-    private function expectedSkus(Product $product, array $designs): array
-    {
-        $skus = [];
-
-        foreach ($designs as $design) {
-            foreach (self::SIZES as $size) {
-                $skus[] = "{$product->sku}-{$design['code']}-{$size}";
-            }
-        }
-
-        return $skus;
     }
 }
