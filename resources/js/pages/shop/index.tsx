@@ -25,16 +25,21 @@ export default function Index({ products }: Props) {
                         <h1 className="text-premium-heading mb-4">Archives</h1>
                         <p className="copy-muted font-light tracking-[0.1em] uppercase text-xs">Explore all released silhouettes.</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 copy-muted" />
+                    {/* A fixed 256px field beside a 121px button needs 393px of
+                        room, so this row used to push the catalogue sideways on
+                        a phone. The field is fluid until there is space for it
+                        to be its own size. */}
+                    <div className="flex w-full items-center gap-3 sm:w-auto sm:gap-4">
+                        <div className="group relative min-w-0 flex-1 sm:flex-none">
+                            <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 copy-muted" />
                             <input
                                 type="text"
                                 placeholder="SEARCH ARCHIVES..."
-                                className="h-12 w-64 rounded-full border border-border bg-zinc-50/50 pl-12 pr-6 text-[12px] font-bold uppercase tracking-[0.1em] outline-none transition-all focus:w-80 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-900"
+                                aria-label="Search the archive"
+                                className="h-12 w-full rounded-full border border-border bg-zinc-50/50 pl-12 pr-6 text-[12px] font-bold uppercase tracking-[0.1em] outline-none transition-all focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-900 sm:w-64 sm:focus:w-80"
                             />
                         </div>
-                        <button className="flex items-center gap-2 h-12 px-6 rounded-full border border-border hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                        <button className="flex h-12 shrink-0 items-center gap-2 rounded-full border border-border px-5 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900 sm:px-6">
                             <Filter className="size-4" />
                             <span className="text-[12px] font-bold uppercase tracking-[0.1em]">Filter</span>
                         </button>

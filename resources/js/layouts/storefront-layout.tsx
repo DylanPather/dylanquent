@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, User, Search, Menu, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { ThemeToggle } from '../components/theme-toggle';
 
 interface Props {
     children: React.ReactNode;
@@ -58,7 +59,8 @@ export default function StorefrontLayout({ children, title }: Props) {
                     </Link>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-3 md:gap-6">
+                    <div className="flex items-center gap-3 md:gap-5">
+                        <ThemeToggle compact className="hidden sm:inline-flex" />
                         <button className="hidden sm:block hover:opacity-50 transition-opacity">
                             <Search className="size-5" />
                         </button>
@@ -104,8 +106,11 @@ export default function StorefrontLayout({ children, title }: Props) {
                                 <Link onClick={() => setIsMobileMenuOpen(false)} href={route('cart.index')}>Cart</Link>
                                 <Link onClick={() => setIsMobileMenuOpen(false)} href={auth.user ? route('dashboard') : route('login')}>Account</Link>
                             </nav>
-                            <div className="mt-auto pt-10 border-t border-zinc-100 dark:border-zinc-800 text-[12px] uppercase font-bold tracking-[0.1em] copy-muted">
-                                JP / TYO &mdash; ZA / JHB
+                            <div className="mt-auto space-y-6 pt-10 border-t border-zinc-100 dark:border-zinc-800">
+                                <ThemeToggle />
+                                <p className="text-[12px] uppercase font-bold tracking-[0.1em] copy-muted">
+                                    JP / TYO &mdash; ZA / JHB
+                                </p>
                             </div>
                         </div>
                     </motion.div>
