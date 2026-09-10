@@ -661,7 +661,7 @@ function Reviews({ reviews, rating }: { reviews: Review[]; rating: { average: nu
         <section id="reviews" className="mt-20 scroll-mt-28 border-t border-border pt-12 md:mt-32 md:pt-16">
             <div className="mb-10 flex flex-col justify-between gap-4 md:mb-14 md:flex-row md:items-end">
                 <h2 className="text-3xl font-black uppercase leading-none tracking-tighter md:text-5xl">
-                    Reviews <span className="copy-ghost">({rating.count})</span>
+                    Reviews <span className="display-ghost">({rating.count})</span>
                 </h2>
                 {rating.average && (
                     <div className="flex items-center gap-3">
@@ -691,7 +691,7 @@ function RelatedProducts({ related }: { related: Related[] }) {
         <section className="mt-20 border-t border-border pt-12 md:mt-32 md:pt-16">
             <div className="mb-10 flex items-end justify-between md:mb-14">
                 <h2 className="text-3xl font-black uppercase leading-none tracking-tighter md:text-5xl">
-                    You might <span className="copy-ghost">also like</span>
+                    You might <span className="display-ghost">also like</span>
                 </h2>
                 <Link
                     href={route('shop.index')}

@@ -45,7 +45,7 @@ function PremiumWelcome({ settings }: { settings: any }) {
                             <p className="text-[11px] md:text-[13px] uppercase tracking-[0.16em] md:tracking-[0.18em] font-bold copy-muted mb-4 md:mb-8 italic">Est. 2026 // Prototype 01</p>
                             <h1 className="text-[15vw] sm:text-[12vw] lg:text-[10rem] font-black uppercase tracking-tighter leading-[0.8] mb-8 md:mb-12">
                                 {heroTitle.split(' ')[0]} <br />
-                                <span className="copy-ghost">{heroTitle.split(' ')[1] || 'Studio'}</span>
+                                <span className="display-ghost">{heroTitle.split(' ')[1] || 'Studio'}</span>
                             </h1>
                             <p className="text-base md:text-xl lg:text-2xl copy-muted font-light max-w-2xl mx-auto leading-relaxed px-4">{heroDescription}</p>
                         </motion.div>
@@ -63,7 +63,7 @@ function PremiumWelcome({ settings }: { settings: any }) {
                         <div className="mb-10 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-border pb-6 md:pb-10 gap-4 md:gap-6">
                             <div>
                                 <p className="text-[11px] md:text-[13px] uppercase tracking-[0.16em] md:tracking-[0.18em] font-bold copy-muted mb-2 md:mb-4 pl-1">Season Drop / 01</p>
-                                <h2 className="text-3xl md:text-5xl lg:text-7xl font-black tracking-tighter uppercase leading-none">The Featured <span className="copy-ghost">Edit</span></h2>
+                                <h2 className="text-3xl md:text-5xl lg:text-7xl font-black tracking-tighter uppercase leading-none">The Featured <span className="display-ghost">Edit</span></h2>
                             </div>
                             <Link href={route('shop.index')} className="text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] border-b-2 border-black pb-1 hover:gap-5 transition-all flex items-center gap-2">Explore All <ArrowRight className="size-3 md:size-4" /></Link>
                         </div>
@@ -75,7 +75,7 @@ function PremiumWelcome({ settings }: { settings: any }) {
 
                 <section id="ethos" className="mt-20 md:mt-32 lg:mt-40">
                     <div className="grid lg:grid-cols-2 gap-10 md:gap-20 items-end mb-16 md:mb-24 pb-8 md:pb-12 border-b border-border">
-                        <h2 className="text-3xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none">Our <span className="copy-ghost">Protocol.</span></h2>
+                        <h2 className="text-3xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none">Our <span className="display-ghost">Protocol.</span></h2>
                         <p className="text-base md:text-xl copy-muted font-light max-w-lg">We believe in intentional construction and the elimination of the unnecessary. Every piece is a proof of concept.</p>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
@@ -99,7 +99,7 @@ function PremiumWelcome({ settings }: { settings: any }) {
                     <div className="rounded-[2rem] md:rounded-[3rem] lg:rounded-[4rem] bg-foreground text-background p-8 md:p-16 lg:p-32 relative overflow-hidden text-center">
                         <AsanohaBG className="opacity-5 scale-150 rotate-45" />
                         <div className="relative max-w-3xl mx-auto space-y-8 md:space-y-12">
-                            <h2 className="text-3xl md:text-5xl lg:text-8xl font-black uppercase tracking-tighter leading-none">Access <br /> <span className="copy-ghost">Granted.</span></h2>
+                            <h2 className="text-3xl md:text-5xl lg:text-8xl font-black uppercase tracking-tighter leading-none">Access <br /> <span className="display-ghost">Granted.</span></h2>
                             <form onSubmit={onSubmit} className="flex flex-col sm:flex-row gap-3 md:gap-4">
                                 <input type="email" placeholder="YOUR@IDENTITY.COM" className="h-14 md:h-16 flex-1 bg-background text-foreground rounded-xl md:rounded-2xl px-6 md:px-8 text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] outline-none" required />
                                 <button type="submit" className="h-14 md:h-16 px-8 md:px-12 bg-zinc-800 text-white rounded-xl md:rounded-2xl text-[12px] md:text-xs font-bold uppercase tracking-[0.1em] hover:bg-zinc-700 transition-all">{submitted ? 'Verified' : 'Initialize'}</button>
@@ -163,7 +163,7 @@ function ClassicWelcome({ settings }: { settings: any }) {
 
                 <section className="mt-32">
                     <div className="flex items-end justify-between border-b border-border pb-10 mb-16 px-4">
-                        <h2 className="text-5xl font-black uppercase tracking-tighter">Latest <span className="copy-ghost not-italic">Drops</span></h2>
+                        <h2 className="text-5xl font-black uppercase tracking-tighter">Latest <span className="display-ghost not-italic">Drops</span></h2>
                         <Link href={route('shop.index')} className="text-xs font-black uppercase tracking-[0.1em]">See All</Link>
                     </div>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">

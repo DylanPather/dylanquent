@@ -44,7 +44,7 @@ function Hero() {
                 </p>
                 <h1 className="text-[13vw] font-black uppercase leading-[0.82] tracking-tighter sm:text-[11vw] lg:text-[8.5rem]">
                     Software <br />
-                    <span className="copy-ghost">Built Solo.</span>
+                    <span className="display-ghost">Built Solo.</span>
                 </h1>
                 <p className="mt-8 max-w-2xl text-base font-light leading-relaxed copy-muted md:mt-12 md:text-xl">
                     One developer, the whole build. No account managers, no handoffs, no team that changes
@@ -102,7 +102,7 @@ function SectionHeading({ eyebrow, title, accent, blurb }: { eyebrow: string; ti
             <div>
                 <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.18em] copy-muted md:mb-4 md:text-[13px]">{eyebrow}</p>
                 <h2 className="text-3xl font-black uppercase leading-none tracking-tighter md:text-5xl lg:text-7xl">
-                    {title} <span className="copy-ghost">{accent}</span>
+                    {title} <span className="display-ghost">{accent}</span>
                 </h2>
             </div>
             {blurb && <p className="max-w-lg text-base font-light copy-muted md:text-lg">{blurb}</p>}
@@ -391,7 +391,7 @@ function Contact({
                     <div className="space-y-6 md:space-y-8">
                         <p className="text-[12px] font-bold uppercase tracking-[0.18em] copy-muted">Start a Project</p>
                         <h2 className="text-4xl font-black uppercase leading-[0.85] tracking-tighter md:text-6xl lg:text-7xl">
-                            Tell me <br /> <span className="copy-ghost">what you need.</span>
+                            Tell me <br /> <span className="display-ghost">what you need.</span>
                         </h2>
                         <p className="max-w-md text-sm font-light leading-relaxed copy-muted md:text-base">
                             A few details is enough to start. You get a reply within one business day — either a
