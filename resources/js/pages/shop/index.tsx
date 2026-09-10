@@ -4,11 +4,14 @@ import { motion } from 'framer-motion';
 import { Filter, Search } from 'lucide-react';
 import React from 'react';
 import VariantPreview from '../../components/storefront/variant-preview';
+import { Pagination } from '../../components/pagination';
 
 interface Props {
     products: {
         data: any[];
-        links: any[];
+        links: { url: string | null; label: string; active: boolean }[];
+        current_page: number;
+        last_page: number;
     };
 }
 
@@ -51,24 +54,14 @@ export default function Index({ products }: Props) {
                     )}
                 </div>
 
-                {/* Pagination (Simplified) */}
-                {products.data.length > 0 && (
-                    <div className="mt-24 flex justify-center border-t border-border pt-12">
-                        <div className="flex items-center gap-4">
-                            {products.links.map((link: any, i: number) => (
-                                <Link
-                                    key={i}
-                                    href={link.url || '#'}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className={`size-10 flex items-center justify-center rounded-full text-[12px] font-bold uppercase tracking-[0.1em] transition-all ${link.active
-                                        ? 'bg-foreground text-background scale-110 shadow-xl'
-                                        : 'hover:bg-zinc-50 dark:hover:bg-zinc-900 opacity-50'
-                                        } ${!link.url && 'opacity-10 pointer-events-none'}`}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
+                <Pagination
+                    links={products.links}
+                    currentPage={products.current_page}
+                    lastPage={products.last_page}
+                    label="Archive"
+                    className="mt-24 border-t border-border pt-12"
+                />
+
             </div>
         </StorefrontLayout>
     );
