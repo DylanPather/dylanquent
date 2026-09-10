@@ -41,8 +41,8 @@ class FirstDropSeeder extends Seeder
         'QM' => ['S' => 8,  'M' => 14, 'L' => 12, 'XL' => 6],
         'VT' => ['S' => 5,  'M' => 10, 'L' => 9,  'XL' => 4],
         'ZG' => ['S' => 3,  'M' => 11, 'L' => 7,  'XL' => 5],
-        'MW' => ['S' => 2,  'M' => 9,  'L' => 8,  'XL' => 0],
-        'SW' => ['S' => 0,  'M' => 7,  'L' => 6,  'XL' => 3],
+        'SW' => ['S' => 2,  'M' => 9,  'L' => 8,  'XL' => 0],
+        'MW' => ['S' => 0,  'M' => 7,  'L' => 6,  'XL' => 3],
     ];
 
     private function designs(): array
@@ -67,16 +67,16 @@ class FirstDropSeeder extends Seeder
                 'image' => '/images/products/first-drop/hoodie-zen-geometry.webp',
             ],
             [
-                'code' => 'MW',
-                'name' => 'Moon Waifu',
-                'blurb' => 'Crescent-framed portrait with a red seal, right chest.',
-                'image' => '/images/products/first-drop/hoodie-moon-waifu.webp',
-            ],
-            [
                 'code' => 'SW',
                 'name' => 'Shadow Waifu',
-                'blurb' => 'Oversized tonal portrait printed black-on-black down the body.',
+                'blurb' => 'Crescent-framed portrait with a red seal, right chest.',
                 'image' => '/images/products/first-drop/hoodie-shadow-waifu.webp',
+            ],
+            [
+                'code' => 'MW',
+                'name' => 'Moon Waifu',
+                'blurb' => 'Oversized tonal portrait printed black-on-black down the body.',
+                'image' => '/images/products/first-drop/hoodie-moon-waifu.webp',
             ],
         ];
     }
@@ -181,8 +181,8 @@ class FirstDropSeeder extends Seeder
             ->whereNotIn('sku', $this->expectedSkus($product, $designs))
             ->delete();
 
-        foreach ($designs as $design) {
-            foreach (self::SIZES as $size) {
+        foreach ($designs as $designOrder => $design) {
+            foreach (self::SIZES as $sizeOrder => $size) {
                 $variant = ProductVariant::updateOrCreate(
                     ['sku' => "{$product->sku}-{$design['code']}-{$size}"],
                     [
@@ -194,6 +194,11 @@ class FirstDropSeeder extends Seeder
                             'design_code' => $design['code'],
                             'design_blurb' => $design['blurb'],
                             'size' => $size,
+                            // Rows keep the ids they were first written with, so
+                            // renaming or reordering a print would otherwise leave
+                            // the picker in insert order. Carry the intended order.
+                            'design_order' => $designOrder,
+                            'size_order' => $sizeOrder,
                         ],
                         'price_cents' => self::PRICE_CENTS,
                         'track_inventory' => true,

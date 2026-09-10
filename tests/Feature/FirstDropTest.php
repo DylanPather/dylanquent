@@ -19,14 +19,34 @@ it('builds a print x size matrix on the hoodie', function () {
 
     expect($product->variants)->toHaveCount(20);
 
-    $designs = $product->variants->pluck('attributes.design')->unique()->values();
+    $designs = $product->variants
+        ->sortBy('attributes.design_order')
+        ->pluck('attributes.design')
+        ->unique()
+        ->values();
 
     expect($designs->all())->toBe([
-        'Quiet Mark', 'Vertical Tokyo', 'Zen Geometry', 'Moon Waifu', 'Shadow Waifu',
+        'Quiet Mark', 'Vertical Tokyo', 'Zen Geometry', 'Shadow Waifu', 'Moon Waifu',
     ]);
 
-    expect($product->variants->pluck('attributes.size')->unique()->values()->all())
-        ->toBe(['S', 'M', 'L', 'XL']);
+    expect(
+        $product->variants->sortBy('attributes.size_order')->pluck('attributes.size')->unique()->values()->all()
+    )->toBe(['S', 'M', 'L', 'XL']);
+});
+
+it('pins the picker order to the drop, not to row order', function () {
+    // Renaming a print reuses its row, so insert order stops matching the drop.
+    // The recorded order is what the picker sorts on.
+    $product = Product::where('slug', 'heavy-hoodie')->first();
+
+    $shadow = $product->variants->firstWhere('attributes.design', 'Shadow Waifu');
+    $moon = $product->variants->firstWhere('attributes.design', 'Moon Waifu');
+
+    expect($shadow->attributes['design_order'])->toBe(3)
+        ->and($moon->attributes['design_order'])->toBe(4);
+
+    expect($product->variants->pluck('attributes.size_order')->unique()->sort()->values()->all())
+        ->toBe([0, 1, 2, 3]);
 });
 
 it('gives every variant its own print image', function () {
@@ -88,7 +108,7 @@ it('carries the chosen print onto the cart line', function () {
 });
 
 it('refuses a sold-out print and size', function () {
-    $variant = ProductVariant::where('sku', 'DQ-HD-01-SW-S')->firstOrFail();
+    $variant = ProductVariant::where('sku', 'DQ-HD-01-MW-S')->firstOrFail();
 
     expect($variant->inventoryLevels->sum('quantity'))->toBe(0);
 

@@ -34,6 +34,7 @@ interface Design {
     name: string;
     blurb: string | null;
     image: string | null;
+    order: number;
     inStock: boolean;
 }
 
@@ -62,19 +63,27 @@ function useDesignAxis(variants: Variant[]) {
                 name,
                 blurb: v.attributes?.design_blurb ?? null,
                 image: v.image_url,
+                order: Number(v.attributes?.design_order ?? designs.length),
                 inStock: v.is_available,
             });
         }
 
-        // Sizes are listed in the order the seeder emits them, not alphabetically,
-        // so S/M/L/XL stays in wearable order rather than becoming L/M/S/XL.
-        const sizes: string[] = [];
+        // Sizes run S/M/L/XL, not alphabetically — L/M/S/XL is unreadable on a
+        // size picker.
+        const sizes: { value: string; order: number }[] = [];
         for (const v of variants) {
-            const size = v.attributes?.size;
-            if (size && !sizes.includes(size)) sizes.push(size);
+            const value = v.attributes?.size;
+            if (!value || sizes.some((s) => s.value === value)) continue;
+            sizes.push({ value, order: Number(v.attributes?.size_order ?? sizes.length) });
         }
 
-        return { designs, sizes };
+        // Variants arrive in row order, which is insert order — renaming or
+        // reordering a print later must not shuffle the picker, so both axes
+        // sort on the position the drop recorded.
+        designs.sort((a, b) => a.order - b.order);
+        sizes.sort((a, b) => a.order - b.order);
+
+        return { designs, sizes: sizes.map((s) => s.value) };
     }, [variants]);
 }
 
