@@ -131,11 +131,17 @@ it('gives cards the shots they need to cycle', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page->has('related.0.preview_urls'));
 
-    $tee = $this->get('/shop')->viewData('page')['props']['products']['data'];
-    $card = collect($tee)->firstWhere('slug', 'boxy-tee');
+    $cards = $this->get('/shop')->viewData('page')['props']['products']['data'];
+    $tee = collect($cards)->firstWhere('slug', 'boxy-tee');
 
-    // Capped at six: a card is a glance, not the gallery.
-    expect($card['preview_urls'])->toHaveCount(6);
+    // One shot per print, not per print/colour pair — the card shows the range
+    // of prints and leaves the colourways to the product page.
+    expect($tee['preview_urls'])->toHaveCount(5);
+
+    // And a product with a single photograph gives the card nothing to cycle.
+    $cap = collect($cards)->firstWhere('slug', 'signature-cap');
+
+    expect($cap['preview_urls'])->toHaveCount(1);
 });
 
 it('carries the chosen print and colour onto the cart line', function () {

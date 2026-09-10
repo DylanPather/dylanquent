@@ -159,30 +159,42 @@ class ProductController extends Controller
     }
 
     /**
-     * The shots a card cycles through: one per variant image, in variant order,
-     * falling back to the gallery for products whose variants share a photo.
+     * The shots a card cycles through.
+     *
+     * One per print, not one per print/colour pair: a card has a few seconds
+     * of a shopper's attention and should spend them showing the range of
+     * prints, not the same three prints twice in two colours. The colourways
+     * are the product page's job.
      *
      * Capped because a card is a glance, not the gallery — six shots at ~2.5
      * seconds each is already fifteen seconds to see them all.
      */
     private function previewUrls(Product $p, int $limit = 6)
     {
-        $fromVariants = $p->variants
-            ->pluck('image_url')
-            ->filter()
-            ->unique()
-            ->values();
+        $withImages = $p->variants->filter(fn ($v) => $v->image_url);
 
-        if ($fromVariants->isNotEmpty()) {
-            return $fromVariants->take($limit);
+        if ($withImages->isNotEmpty()) {
+            return $withImages
+                // Variants with no print fall back to grouping by the photo
+                // itself, which is the same thing for a single-axis product.
+                ->groupBy(fn ($v) => $v->attributes['design'] ?? $v->image_url)
+                ->map(fn ($group) => $group->first()->image_url)
+                ->values()
+                ->take($limit);
         }
 
-        return $p->images
+        $fromGallery = $p->images
             ->sortBy([['is_primary', 'desc'], ['sort_order', 'asc']])
             ->pluck('url')
             ->filter()
             ->unique()
             ->take($limit)
             ->values();
+
+        // Never hand back nothing: a product with neither variant shots nor a
+        // gallery still has to put something on its card.
+        return $fromGallery->isNotEmpty()
+            ? $fromGallery
+            : collect([$p->thumbnail_url])->filter()->values();
     }
 }

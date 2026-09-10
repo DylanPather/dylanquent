@@ -36,8 +36,11 @@ class StorefrontInventorySeeder extends Seeder
             );
         }
 
-        // Give each product a gallery from the images already in public/.
-        $gallery = [
+        // Each product gets its own shot and nothing else. This seeder used to
+        // pad every gallery out to three with whatever else was in public/,
+        // which put a hoodie and a tee in the cap's gallery — visible now that
+        // the storefront cards cycle through a product's shots.
+        $stockPhotos = [
             '/images/products/boxy_tee_black_1769346857146.png',
             '/images/products/heavy_hoodie_grey_1769346878833.png',
             '/images/products/cargo_pants_olive_1769346899867.png',
@@ -45,21 +48,21 @@ class StorefrontInventorySeeder extends Seeder
         ];
 
         foreach (Product::all() as $product) {
-            $primary = $product->thumbnail_url ?: $gallery[0];
-
-            $urls = collect([$primary])
-                ->merge(collect($gallery)->reject(fn ($u) => $u === $primary)->take(2))
-                ->values();
-
-            foreach ($urls as $position => $url) {
-                ProductImage::updateOrCreate(
-                    ['product_id' => $product->id, 'url' => $url],
-                    [
-                        'is_primary' => $position === 0,
-                        'sort_order' => $position,
-                    ]
-                );
+            if (! $product->thumbnail_url) {
+                continue;
             }
+
+            // Only the photos this seeder itself injected are pruned, so a
+            // gallery built in the admin is left alone.
+            ProductImage::where('product_id', $product->id)
+                ->whereIn('url', $stockPhotos)
+                ->where('url', '!=', $product->thumbnail_url)
+                ->delete();
+
+            ProductImage::updateOrCreate(
+                ['product_id' => $product->id, 'url' => $product->thumbnail_url],
+                ['is_primary' => true, 'sort_order' => 0]
+            );
         }
     }
 }
