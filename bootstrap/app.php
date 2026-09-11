@@ -33,23 +33,47 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Vercel keeps only the tail of a log message. A Laravel stack trace
-        // runs to seventy-odd frames, so the part that survives is the
-        // middleware the request passed through on its way in, and the part
-        // that gets cut is the exception itself — the only part worth having.
-        // Three separate attempts to read the cause of a production 500 came
-        // back with frame #56 onward and nothing else.
+        // Vercel keeps only the TAIL of a log message, and a Laravel stack
+        // trace runs to seventy-odd frames. What survives is the middleware
+        // the request passed through on its way in — TrimStrings, HandleCors —
+        // and what gets cut is the exception itself. Reading the cause of a
+        // production 500 was impossible: every attempt came back starting at
+        // frame #56.
         //
-        // So log one compact line first. It is short enough to survive intact
-        // and carries what a stack trace is for: what broke, and where.
+        // Writing a short line *before* the default handler does not help,
+        // because it is then the head of the output and the head is what goes.
+        // So replace the default report instead: one bounded line carrying the
+        // exception and the frames nearest the throw, which is the half of a
+        // trace that says anything.
         $exceptions->report(function (\Throwable $e) {
+            $relative = fn (?string $path) => $path
+                ? str_replace(base_path().'/', '', $path)
+                : '[internal]';
+
+            $frames = collect($e->getTrace())
+                ->take(10)
+                ->map(fn (array $f) => sprintf(
+                    '%s:%s %s%s%s()',
+                    $relative($f['file'] ?? null),
+                    $f['line'] ?? '0',
+                    $f['class'] ?? '',
+                    $f['type'] ?? '',
+                    $f['function'] ?? '',
+                ))
+                ->implode('  <  ');
+
             Log::error(sprintf(
-                '%s: %s @ %s:%d',
+                '%s: %s @ %s:%d  <  %s',
                 $e::class,
                 $e->getMessage(),
-                str_replace(base_path().'/', '', $e->getFile()),
+                $relative($e->getFile()),
                 $e->getLine(),
+                $frames,
             ));
+
+            // Stop the default handler. Its full trace is the thing that gets
+            // truncated, and letting it run buries the line above.
+            return false;
         });
     })->create();
 
