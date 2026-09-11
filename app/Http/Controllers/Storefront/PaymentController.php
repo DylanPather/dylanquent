@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Storefront;
 
 use App\Models\Order;
-use App\Models\InventoryLevel;
 use App\Services\PaymentGateway\PaymentProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -155,13 +154,13 @@ class PaymentController
                 }
 
                 DB::transaction(function () use ($order, $result) {
+                    // OrderObserver draws the stock off the pending -> paid
+                    // transition, so this update is the whole job.
                     $order->update([
                         'payment_id' => $result['payment_id'],
                         'payment_status' => 'paid',
                         'status' => 'paid',
                     ]);
-
-                    $this->reduceStock($order);
                 });
 
                 session()->forget(['order_id', 'cart']);
@@ -187,49 +186,6 @@ class PaymentController
     /**
      * Handle webhook from payment gateway
      */
-    /**
-     * Draw the ordered quantities out of inventory.
-     *
-     * Nothing reduced stock when an order was paid, so the same unit could be
-     * sold indefinitely. Levels are drained warehouse by warehouse.
-     */
-    private function reduceStock(Order $order): void
-    {
-        $order->loadMissing('items');
-
-        foreach ($order->items as $item) {
-            if (! $item->product_variant_id) {
-                continue;
-            }
-
-            $remaining = (int) $item->quantity;
-
-            $levels = InventoryLevel::where('product_variant_id', $item->product_variant_id)
-                ->where('quantity', '>', 0)
-                ->lockForUpdate()
-                ->orderByDesc('quantity')
-                ->get();
-
-            foreach ($levels as $level) {
-                if ($remaining <= 0) {
-                    break;
-                }
-
-                $take = min($remaining, (int) $level->quantity);
-                $level->decrement('quantity', $take);
-                $remaining -= $take;
-            }
-
-            if ($remaining > 0) {
-                Log::warning('Order paid with insufficient stock on hand', [
-                    'order_id' => $order->id,
-                    'variant_id' => $item->product_variant_id,
-                    'short_by' => $remaining,
-                ]);
-            }
-        }
-    }
-
     public function webhook(Request $request, string $gateway)
     {
         try {
@@ -249,17 +205,13 @@ class PaymentController
 
                 if ($order) {
                     DB::transaction(function () use ($order, $result) {
-                        $wasPaid = $order->payment_status === 'paid';
-
+                        // Gateways retry webhooks. OrderObserver draws stock off
+                        // the pending -> paid transition, so a replay that finds
+                        // the order already paid moves no stock.
                         $order->update([
                             'payment_status' => $result['status'],
                             'status' => $result['status'] === 'paid' ? 'paid' : $order->status,
                         ]);
-
-                        // Gateways retry webhooks; only draw stock on the transition.
-                        if (! $wasPaid && $result['status'] === 'paid') {
-                            $this->reduceStock($order);
-                        }
 
                         if ($result['status'] === 'failed') {
                             event(new \App\Events\PaymentFailed($order, $result['reason'] ?? 'Unknown'));

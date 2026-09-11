@@ -9,6 +9,7 @@ use App\Models\InventoryLevel;
 use App\Models\InventoryMovement;
 use App\Models\Order;
 use Illuminate\Mail\Mailable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class OrderObserver
@@ -50,35 +51,62 @@ class OrderObserver
         Mail::send($mailable);
     }
 
+    /**
+     * Draw the ordered quantities out of inventory.
+     *
+     * The single owner of stock deduction for the pending -> paid transition.
+     * The observer sees every route to paid — the storefront confirmation, the
+     * gateway webhook, and an admin changing the status by hand — where the
+     * payment controller only saw its own two. It previously deducted a second
+     * time on top of the controller, drawing double for every storefront order.
+     *
+     * Levels are drained warehouse by warehouse under a row lock, fullest
+     * first, and every draw is written to inventory_movements.
+     */
     private function deductInventory(Order $order): void
     {
-        $warehouse = \App\Models\Warehouse::where('is_active', true)->first();
-        if (!$warehouse) {
-            return;
-        }
+        $order->loadMissing('items');
 
         foreach ($order->items as $item) {
-            if (!$item->product_variant_id) {
+            if (! $item->product_variant_id) {
                 continue;
             }
 
-            $inventoryLevel = InventoryLevel::where('product_variant_id', $item->product_variant_id)
-                ->where('warehouse_id', $warehouse->id)
-                ->first();
+            $remaining = (int) $item->quantity;
 
-            if ($inventoryLevel) {
-                $inventoryLevel->decrement('quantity', $item->quantity);
+            $levels = InventoryLevel::where('product_variant_id', $item->product_variant_id)
+                ->where('quantity', '>', 0)
+                ->lockForUpdate()
+                ->orderByDesc('quantity')
+                ->get();
+
+            foreach ($levels as $level) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $take = min($remaining, (int) $level->quantity);
+                $level->decrement('quantity', $take);
+                $remaining -= $take;
 
                 InventoryMovement::create([
                     'product_variant_id' => $item->product_variant_id,
-                    'warehouse_id' => $warehouse->id,
+                    'warehouse_id' => $level->warehouse_id,
                     'type' => 'sale',
-                    'quantity' => -$item->quantity,
+                    'quantity' => -$take,
                     'reference_type' => Order::class,
                     'reference_id' => $order->id,
                     'performed_by' => auth()->id(),
                     'note' => "Order #{$order->order_number}",
                     'occurred_at' => now(),
+                ]);
+            }
+
+            if ($remaining > 0) {
+                Log::warning('Order paid with insufficient stock on hand', [
+                    'order_id' => $order->id,
+                    'variant_id' => $item->product_variant_id,
+                    'short_by' => $remaining,
                 ]);
             }
         }
