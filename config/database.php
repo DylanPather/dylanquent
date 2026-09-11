@@ -96,23 +96,6 @@ return [
             'search_path' => 'public',
             'sslmode' => 'prefer',
 
-            // Production talks to Neon through its pooled endpoint, which is
-            // PgBouncer in transaction mode. PgBouncer hands each statement to
-            // whichever backend is free, so a server-side prepared statement
-            // made on one backend is missing on the next — inside a
-            // transaction that aborts it, and every later statement fails with
-            // 25P02 "current transaction is aborted". The first query of a
-            // transaction succeeded and the second did not, which took out
-            // every DB::transaction() in the app: creating an order at
-            // checkout, confirming a payment, and handling a gateway webhook.
-            //
-            // Emulating prepares sends each statement complete, with its
-            // values already quoted by PDO, so nothing has to survive between
-            // backends. Verified against the live pooled endpoint: 1 of 6
-            // queries in a transaction succeeded before this, 6 of 6 after.
-            'options' => [
-                PDO::ATTR_EMULATE_PREPARES => env('DB_EMULATE_PREPARES', true),
-            ],
         ],
 
         'sqlsrv' => [
