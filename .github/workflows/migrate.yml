@@ -1,0 +1,68 @@
+name: migrate production
+
+# Vercel never runs migrations. Its build step is `npm run build` (Node only,
+# no PHP), it has no post-deploy hook, and the deployed function filesystem is
+# read-only and only wakes on an HTTP request. So the schema on Neon only ever
+# moved when someone remembered to run artisan by hand from their laptop.
+#
+# This runs them for you on every push to main — the branch Vercel deploys to
+# production. The migrations in this repo are additive (new columns, widened
+# constraints), so it is safe that this races Vercel's own build rather than
+# strictly preceding it.
+#
+# Needs one repository secret: DATABASE_URL, the Neon connection string.
+# Vercel dashboard → Storage → your Postgres → .env.local tab.
+
+on:
+  push:
+    branches:
+      - main
+  # Lets you re-run migrations from the Actions tab without pushing anything.
+  workflow_dispatch:
+
+# Never let two migration runs overlap on the same database.
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      # Migrations neither encrypt nor decrypt anything, so a throwaway key is
+      # enough to boot artisan. Keeping the real APP_KEY out of here means this
+      # workflow needs exactly one secret.
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: pgsql
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      LOG_CHANNEL: stderr
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stop early if the database secret is missing
+        run: |
+          if [ -z "${DATABASE_URL}" ]; then
+            echo "::error::DATABASE_URL is not set. Add it under Settings → Secrets and variables → Actions, using the Neon connection string from the Vercel dashboard (Storage → your Postgres → .env.local tab)."
+            exit 1
+          fi
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          tools: composer:v2
+          extensions: pdo_pgsql
+
+      - name: Install Dependencies
+        run: composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
+
+      - name: Show what is pending
+        run: php artisan migrate:status
+
+      - name: Migrate
+        run: php artisan migrate --force
