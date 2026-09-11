@@ -174,6 +174,26 @@
         color: color-mix(in srgb, currentColor 50%, transparent);
     }
 
+    /*
+     | The same 50% fade as .copy-ghost, for the second half of a display
+     | heading.
+     |
+     | copy-ghost fades the *ink*, so a glyph is painted at half alpha. Set at
+     | display sizes with tracking-tighter the heavy Outfit 900 letterforms
+     | physically overlap, and each overlap gets painted twice — which reads as
+     | dark notches inside the word, as though the two lines had collided.
+     |
+     | Fading the element as a group instead paints every glyph once at full
+     | strength and fades the finished result, so overlaps are invisible.
+     | Identical anywhere the glyphs do not touch.
+     |
+     | Not folded into copy-ghost itself: opacity applies to descendants too,
+     | and copy-ghost is used on links whose hover restores full colour.
+     */
+    .display-ghost {
+        opacity: 0.5;
+    }
+
     .font-logo {
         font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif !important;
         font-weight: 900 !important;

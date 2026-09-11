@@ -1,4 +1,5 @@
 import AppLogoIcon from '@/components/app-logo-icon';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Link } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
 import { motion } from 'framer-motion';
@@ -15,6 +16,8 @@ export default function AuthSimpleLayout({ children, title, description }: Props
             <div className="pointer-events-none absolute inset-0">
                 <AsanohaBG />
             </div>
+
+            <ThemeToggle compact className="absolute right-5 top-5 z-10 bg-background/80 backdrop-blur md:right-8 md:top-8" />
             <div className="relative w-full max-w-md px-6 py-10 md:px-0">
                 <motion.section
                     initial={{ opacity: 0, y: 16 }}

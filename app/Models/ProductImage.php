@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductImage extends Model
 {
-    protected $fillable = ['product_id', 'url', 'sort_order', 'is_primary'];
+    protected $fillable = ['product_id', 'product_variant_id', 'url', 'angle', 'sort_order', 'is_primary'];
 
     protected $casts = [
         'is_primary' => 'boolean',
@@ -17,6 +17,12 @@ class ProductImage extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /** Set when this shot is one angle of a specific variant. */
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
     /**

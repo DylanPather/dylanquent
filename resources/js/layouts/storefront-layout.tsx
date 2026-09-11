@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, User, Search, Menu, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { ThemeToggle } from '../components/theme-toggle';
 
 interface Props {
     children: React.ReactNode;
@@ -10,7 +11,11 @@ interface Props {
 }
 
 export default function StorefrontLayout({ children, title }: Props) {
-    const { auth } = usePage<SharedData>().props;
+    // usePage is a hook. It used to be called inline in the badge below, where
+    // the second call sat behind a `&&` — so adding the first item to the cart
+    // changed the hook count from five to six mid-session and React reported a
+    // change in hook order. Read it once, at the top.
+    const { auth, cartCount } = usePage<SharedData>().props;
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -54,15 +59,16 @@ export default function StorefrontLayout({ children, title }: Props) {
                     </Link>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-3 md:gap-6">
+                    <div className="flex items-center gap-3 md:gap-5">
+                        <ThemeToggle compact className="hidden sm:inline-flex" />
                         <button className="hidden sm:block hover:opacity-50 transition-opacity">
                             <Search className="size-5" />
                         </button>
                         <Link href={route('cart.index')} className="relative group">
                             <ShoppingBag className="size-5 group-hover:scale-110 transition-transform" />
-                            {usePage<SharedData>().props.cartCount > 0 && (
+                            {cartCount > 0 && (
                                 <span className="absolute -top-2 -right-2 size-5 bg-foreground text-background text-[11px] font-bold leading-none flex items-center justify-center rounded-full">
-                                    {usePage<SharedData>().props.cartCount}
+                                    {cartCount}
                                 </span>
                             )}
                         </Link>
@@ -100,8 +106,11 @@ export default function StorefrontLayout({ children, title }: Props) {
                                 <Link onClick={() => setIsMobileMenuOpen(false)} href={route('cart.index')}>Cart</Link>
                                 <Link onClick={() => setIsMobileMenuOpen(false)} href={auth.user ? route('dashboard') : route('login')}>Account</Link>
                             </nav>
-                            <div className="mt-auto pt-10 border-t border-zinc-100 dark:border-zinc-800 text-[12px] uppercase font-bold tracking-[0.1em] copy-muted">
-                                JP / TYO &mdash; ZA / JHB
+                            <div className="mt-auto space-y-6 pt-10 border-t border-zinc-100 dark:border-zinc-800">
+                                <ThemeToggle />
+                                <p className="text-[12px] uppercase font-bold tracking-[0.1em] copy-muted">
+                                    JP / TYO &mdash; ZA / JHB
+                                </p>
                             </div>
                         </div>
                     </motion.div>

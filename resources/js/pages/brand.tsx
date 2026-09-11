@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Code2, Shirt } from 'lucide-react';
 import React, { useState } from 'react';
+import { ThemeToggle } from '../components/theme-toggle';
 import { type SharedData } from '../types';
 
 interface Division {
@@ -31,12 +32,15 @@ export default function Brand() {
                         Quiet. Sharp. Daily. · ディランクエント
                     </span>
                 </div>
-                <Link
-                    href={auth?.user ? route('dashboard') : route('login')}
-                    className="text-[12px] font-bold uppercase tracking-[0.14em] copy-muted transition-colors hover:text-foreground md:text-[13px]"
-                >
-                    {auth?.user ? 'Dashboard' : 'Account'}
-                </Link>
+                <div className="flex items-center gap-4 md:gap-5">
+                    <ThemeToggle compact />
+                    <Link
+                        href={auth?.user ? route('dashboard') : route('login')}
+                        className="text-[12px] font-bold uppercase tracking-[0.14em] copy-muted transition-colors hover:text-foreground md:text-[13px]"
+                    >
+                        {auth?.user ? 'Dashboard' : 'Account'}
+                    </Link>
+                </div>
             </header>
 
             {/* Statement */}

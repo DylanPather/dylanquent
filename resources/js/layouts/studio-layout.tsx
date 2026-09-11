@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { ThemeToggle } from '../components/theme-toggle';
 import { type SharedData } from '../types';
 
 interface Props {
@@ -48,7 +49,8 @@ export default function StudioLayout({ children, title }: Props) {
                         ))}
                     </nav>
 
-                    <div className="flex items-center gap-4 md:gap-6">
+                    <div className="flex items-center gap-4 md:gap-5">
+                        <ThemeToggle compact className="hidden sm:inline-flex" />
                         <Link
                             href={route('merch.home')}
                             className="hidden text-[12px] font-bold uppercase tracking-[0.14em] copy-muted transition-colors hover:text-foreground sm:block"
@@ -99,10 +101,11 @@ export default function StudioLayout({ children, title }: Props) {
                                     Merch
                                 </Link>
                             </nav>
-                            <div className="mt-auto border-t border-border pt-8">
+                            <div className="mt-auto space-y-6 border-t border-border pt-8">
+                                <ThemeToggle />
                                 <Link
                                     href={auth.user ? route('dashboard') : route('login')}
-                                    className="text-[12px] font-bold uppercase tracking-[0.16em] copy-muted"
+                                    className="block text-[12px] font-bold uppercase tracking-[0.16em] copy-muted"
                                 >
                                     {auth.user ? 'Dashboard' : 'Account'}
                                 </Link>
