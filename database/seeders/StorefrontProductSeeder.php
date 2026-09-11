@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use Illuminate\Support\Str;
+use Illuminate\Database\Seeder;
 
 class StorefrontProductSeeder extends Seeder
 {
@@ -20,7 +19,7 @@ class StorefrontProductSeeder extends Seeder
                 'is_active' => true,
                 'sku' => 'DQ-TEE-01',
                 'thumbnail_url' => '/images/products/boxy_tee_black_1769346857146.png',
-                'variants' => ['Small', 'Medium', 'Large', 'Extra Large']
+                'variants' => ['Small', 'Medium', 'Large', 'Extra Large'],
             ],
             [
                 'name' => 'Heavy Hoodie',
@@ -30,7 +29,7 @@ class StorefrontProductSeeder extends Seeder
                 'is_active' => true,
                 'sku' => 'DQ-HD-01',
                 'thumbnail_url' => '/images/products/heavy_hoodie_grey_1769346878833.png',
-                'variants' => ['Small', 'Medium', 'Large']
+                'variants' => ['Small', 'Medium', 'Large'],
             ],
             [
                 'name' => 'Cargo Trouser',
@@ -40,7 +39,7 @@ class StorefrontProductSeeder extends Seeder
                 'is_active' => true,
                 'sku' => 'DQ-TR-01',
                 'thumbnail_url' => '/images/products/cargo_pants_olive_1769346899867.png',
-                'variants' => ['30', '32', '34']
+                'variants' => ['30', '32', '34'],
             ],
             [
                 'name' => 'Signature Cap',
@@ -50,8 +49,8 @@ class StorefrontProductSeeder extends Seeder
                 'is_active' => true,
                 'sku' => 'DQ-CP-01',
                 'thumbnail_url' => '/images/products/streetwear_cap_black_1769346921972.png',
-                'variants' => ['One Size']
-            ]
+                'variants' => ['One Size'],
+            ],
         ];
 
         foreach ($products as $pData) {
@@ -63,7 +62,7 @@ class StorefrontProductSeeder extends Seeder
             foreach ($variants as $vName) {
                 ProductVariant::updateOrCreate(
                     ['product_id' => $product->id, 'name' => $vName],
-                    ['sku' => $product->sku . '-' . strtoupper(str_replace(' ', '', $vName)), 'price_cents' => $product->price_cents]
+                    ['sku' => $product->sku.'-'.strtoupper(str_replace(' ', '', $vName)), 'price_cents' => $product->price_cents]
                 );
             }
         }

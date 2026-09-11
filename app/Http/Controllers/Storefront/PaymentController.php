@@ -20,13 +20,13 @@ class PaymentController
     {
         $orderId = session('order_id');
 
-        if (!$orderId) {
+        if (! $orderId) {
             return redirect()->route('checkout.index')->with('error', 'No order found');
         }
 
         $order = Order::find($orderId);
 
-        if (!$order || $order->customer_id !== auth('customer')->id()) {
+        if (! $order || $order->customer_id !== auth('customer')->id()) {
             return redirect()->route('checkout.index')->with('error', 'Invalid order');
         }
 
@@ -173,10 +173,12 @@ class PaymentController
 
             if ($result['status'] === 'processing') {
                 $order->update(['payment_status' => 'processing']);
+
                 return response()->json($result);
             }
 
             $order->update(['payment_status' => 'failed']);
+
             return response()->json($result, 422);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -194,7 +196,7 @@ class PaymentController
 
             $processor = $this->processor->gateway($gateway);
 
-            if (!$processor->verifyWebhookSignature($signature, $request->getContent())) {
+            if (! $processor->verifyWebhookSignature($signature, $request->getContent())) {
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
 
@@ -222,7 +224,8 @@ class PaymentController
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            \Log::error("Webhook error for gateway {$gateway}: " . $e->getMessage());
+            \Log::error("Webhook error for gateway {$gateway}: ".$e->getMessage());
+
             return response()->json(['error' => 'Webhook processing failed'], 500);
         }
     }

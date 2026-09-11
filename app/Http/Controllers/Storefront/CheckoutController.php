@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Storefront;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\OrderItem;
-use App\Models\Customer;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use App\Services\Pricing\PricingService;
 use App\Services\Shipping\ShippingRateProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
@@ -96,7 +96,7 @@ class CheckoutController extends Controller
 
                 if ($item['variant_id'] && (! $variant || $variant->product_id !== $product->id)) {
                     throw ValidationException::withMessages([
-                        'cart' => "An option in your cart is no longer available.",
+                        'cart' => 'An option in your cart is no longer available.',
                     ]);
                 }
 
@@ -174,7 +174,7 @@ class CheckoutController extends Controller
         $order = Order::where('order_number', $request->order)->with('items')->firstOrFail();
 
         return Inertia::render('checkout/success', [
-            'order' => $order
+            'order' => $order,
         ]);
     }
 }

@@ -56,12 +56,12 @@ function fakeGatewayReturning(array $result): void
             return $this->result;
         }
 
-        public function confirm(string $paymentId, string $paymentMethodId = null): array
+        public function confirm(string $paymentId, ?string $paymentMethodId = null): array
         {
             return $this->result;
         }
 
-        public function refund(string $paymentId, int $amountCents = null): array
+        public function refund(string $paymentId, ?int $amountCents = null): array
         {
             return ['status' => 'success'];
         }

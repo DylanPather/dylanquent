@@ -79,12 +79,12 @@ function confirmPaymentAs(User $user, Order $order, string $status = 'paid'): vo
             return ['status' => 'success'];
         }
 
-        public function confirm(string $paymentId, string $paymentMethodId = null): array
+        public function confirm(string $paymentId, ?string $paymentMethodId = null): array
         {
             return ['status' => 'success', 'payment_id' => 'pi_1', 'amount' => 4500, 'currency' => 'ZAR'];
         }
 
-        public function refund(string $paymentId, int $amountCents = null): array
+        public function refund(string $paymentId, ?int $amountCents = null): array
         {
             return ['status' => 'success'];
         }

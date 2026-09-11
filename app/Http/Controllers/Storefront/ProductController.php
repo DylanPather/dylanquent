@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\StorefrontSetting;
 use Inertia\Inertia;
-use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
@@ -15,7 +14,7 @@ class ProductController extends Controller
         $settings = StorefrontSetting::pluck('value', 'key');
 
         return Inertia::render('welcome', [
-            'storefrontSettings' => $settings
+            'storefrontSettings' => $settings,
         ]);
     }
 
@@ -36,12 +35,12 @@ class ProductController extends Controller
                     // The card is unreadable for a five-print drop with one shot.
                     'preview_urls' => $this->previewUrls($p),
                     'categories' => $p->categories->pluck('name'),
-                    'is_available' => $p->variants->some(fn($v) => $v->inventoryLevels->sum('quantity') > 0),
+                    'is_available' => $p->variants->some(fn ($v) => $v->inventoryLevels->sum('quantity') > 0),
                 ];
             });
 
         return Inertia::render('shop/index', [
-            'products' => $products
+            'products' => $products,
         ]);
     }
 
