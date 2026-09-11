@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Enums\OrderStatus;
 use App\Mail\OrderConfirmation;
 use App\Mail\OrderShipped;
 use App\Mail\PaymentFailed;
@@ -14,21 +15,37 @@ class OrderObserver
 {
     public function updated(Order $order)
     {
-        $originalStatus = $order->getOriginal('status');
-        $newStatus = $order->status;
+        $previous = $order->getOriginal('status');
+        $current = $order->status;
 
-        if ($originalStatus === 'pending' && $newStatus === 'paid') {
+        // updated() fires for every write, most of which leave the status
+        // alone — a tracking number, an admin note. Only a move between
+        // statuses is worth telling the customer about.
+        if ($previous === $current) {
+            return;
+        }
+
+        // Not just pending -> paid: an order whose payment failed and was
+        // retried successfully is still the customer's first confirmation,
+        // and its stock still has to come off the shelf.
+        if ($previous?->isAwaitingPayment() && $current === OrderStatus::Paid) {
             $this->mailCustomer($order, new OrderConfirmation($order));
             $this->deductInventory($order);
         }
 
-        if (in_array($newStatus, ['fulfilled', 'shipped']) && $originalStatus !== $newStatus) {
+        if ($current === OrderStatus::Fulfilled) {
             $this->mailCustomer($order, new OrderShipped($order));
         }
 
-        if ($newStatus === 'payment_failed') {
-            $reason = $order->getOriginal('notes') ?? 'Payment processing failed.';
-            $this->mailCustomer($order, new PaymentFailed($order, $reason));
+        if ($current === OrderStatus::PaymentFailed) {
+            // Whatever the gateway said, when it said anything. Reading the
+            // reason off the order rather than the previous note keeps the
+            // admin's own notes out of a customer-facing email.
+            $reason = $order->payment_failure_reason;
+
+            $this->mailCustomer($order, $reason === null
+                ? new PaymentFailed($order)
+                : new PaymentFailed($order, $reason));
         }
     }
 

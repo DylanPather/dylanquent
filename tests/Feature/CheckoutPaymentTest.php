@@ -8,8 +8,6 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\Warehouse;
-use App\Services\PaymentGateway\PaymentGatewayInterface;
-use App\Services\PaymentGateway\PaymentProcessor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 
@@ -182,70 +180,6 @@ it('rejects an unknown delivery method', function () {
  * Paying for two units took four off the shelf.
  */
 
-/** Stand-in gateway so a payment can be confirmed without touching a provider. */
-function fakeGateway(int $amountCents, string $currency = 'ZAR', string $webhookStatus = 'paid', ?int $orderId = null): void
-{
-    $gateway = new class($amountCents, $currency, $webhookStatus, $orderId) implements PaymentGatewayInterface
-    {
-        public function __construct(
-            private int $amountCents,
-            private string $currency,
-            private string $webhookStatus,
-            private ?int $orderId,
-        ) {}
-
-        public function initiate(int $amountCents, string $currency, string $orderId, array $metadata = []): array
-        {
-            return ['status' => 'success', 'payment_id' => 'pay_test'];
-        }
-
-        public function confirm(string $paymentId, ?string $paymentMethodId = null): array
-        {
-            return [
-                'status' => 'success',
-                'payment_id' => $paymentId,
-                'amount' => $this->amountCents,
-                'currency' => $this->currency,
-            ];
-        }
-
-        public function refund(string $paymentId, ?int $amountCents = null): array
-        {
-            return ['status' => 'success'];
-        }
-
-        public function handleWebhook(array $payload): array
-        {
-            return ['status' => $this->webhookStatus, 'order_id' => $this->orderId];
-        }
-
-        public function verifyWebhookSignature(string $signature, string $body): bool
-        {
-            return true;
-        }
-
-        public function getName(): string
-        {
-            return 'Fake';
-        }
-
-        public function isConfigured(): bool
-        {
-            return true;
-        }
-    };
-
-    app()->instance(PaymentProcessor::class, new class($gateway) extends PaymentProcessor
-    {
-        public function __construct(private PaymentGatewayInterface $fake) {}
-
-        public function gateway(string $name): PaymentGatewayInterface
-        {
-            return $this->fake;
-        }
-    });
-}
-
 /** Take an order through checkout and leave it pending against a fake gateway. */
 function pendingOrder(User $user, ProductVariant $variant, Product $product, int $quantity = 2): Order
 {
@@ -280,7 +214,9 @@ it('deducts stock exactly once when a payment is confirmed', function () {
     $user = User::factory()->create();
     $order = pendingOrder($user, $variant, $product, 2);
 
-    fakeGateway($order->total_cents);
+    fakePaymentGateway(['confirm' => [
+        'status' => 'success', 'payment_id' => 'pay_test', 'amount' => $order->total_cents, 'currency' => 'ZAR',
+    ]]);
 
     $this->actingAs($user)
         ->postJson('/payment/confirm', ['order_id' => $order->id, 'payment_id' => 'pay_test'])
@@ -294,7 +230,11 @@ it('deducts stock exactly once when the webhook marks an order paid', function (
     $user = User::factory()->create();
     $order = pendingOrder($user, $variant, $product, 2);
 
-    fakeGateway($order->total_cents, 'ZAR', 'paid', $order->id);
+    // The webhook payload carries no order id, so the gateway pins one.
+    fakePaymentGateway([
+        'confirm' => ['status' => 'success', 'payment_id' => 'pay_test', 'amount' => $order->total_cents, 'currency' => 'ZAR'],
+        'webhook' => ['status' => 'paid', 'order_id' => $order->id],
+    ]);
 
     $this->postJson('/webhooks/payment/stripe', ['id' => 'evt_test'])->assertOk();
 
@@ -311,7 +251,9 @@ it('records one inventory movement per warehouse it draws from', function () {
     $user = User::factory()->create();
     $order = pendingOrder($user, $variant, $product, 9);         // more than either holds
 
-    fakeGateway($order->total_cents);
+    fakePaymentGateway(['confirm' => [
+        'status' => 'success', 'payment_id' => 'pay_test', 'amount' => $order->total_cents, 'currency' => 'ZAR',
+    ]]);
 
     $this->actingAs($user)
         ->postJson('/payment/confirm', ['order_id' => $order->id, 'payment_id' => 'pay_test'])
@@ -334,7 +276,11 @@ it('does not deduct twice when a gateway retries the paid webhook', function () 
     $user = User::factory()->create();
     $order = pendingOrder($user, $variant, $product, 2);
 
-    fakeGateway($order->total_cents, 'ZAR', 'paid', $order->id);
+    // The webhook payload carries no order id, so the gateway pins one.
+    fakePaymentGateway([
+        'confirm' => ['status' => 'success', 'payment_id' => 'pay_test', 'amount' => $order->total_cents, 'currency' => 'ZAR'],
+        'webhook' => ['status' => 'paid', 'order_id' => $order->id],
+    ]);
 
     $this->postJson('/webhooks/payment/stripe', ['id' => 'evt_test'])->assertOk();
     $this->postJson('/webhooks/payment/stripe', ['id' => 'evt_test'])->assertOk();

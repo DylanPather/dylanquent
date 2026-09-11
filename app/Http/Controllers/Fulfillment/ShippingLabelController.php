@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Fulfillment;
 
+use App\Enums\OrderStatus;
+use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ShipmentLabel;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use Inertia\Inertia;
 
 class ShippingLabelController extends Controller
@@ -16,7 +17,7 @@ class ShippingLabelController extends Controller
 
         // Search
         if ($request->has('search') && $request->search) {
-            $search = '%' . $request->search . '%';
+            $search = '%'.$request->search.'%';
             $query->whereHas('order', function ($q) use ($search) {
                 $q->where('order_number', 'like', $search)
                     ->orWhereHas('customer', function ($cq) use ($search) {
@@ -115,12 +116,15 @@ class ShippingLabelController extends Controller
             'service_type' => $validated['service_type'],
             'weight_oz' => $validated['weight_oz'],
             'tracking_number' => $validated['tracking_number'],
-            'cost_cents' => (int)($validated['cost'] * 100),
-            'label_url' => '/labels/' . uniqid() . '.pdf',
+            'cost_cents' => (int) ($validated['cost'] * 100),
+            'label_url' => '/labels/'.uniqid().'.pdf',
         ]);
 
-        // Update order status
-        $order->update(['status' => 'shipped']);
+        // 'shipped' was never a status this column accepted, so printing a
+        // label threw a constraint violation instead of updating the order.
+        // Handing the parcel to a courier is what OrderStatus::Fulfilled
+        // means, and it is what ShippingService::markAsShipped already set.
+        $order->update(['status' => OrderStatus::Fulfilled]);
 
         return redirect()->route('fulfillment.shipping-labels.index')
             ->with('success', 'Shipping label created and order marked as shipped');

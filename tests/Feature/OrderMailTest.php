@@ -1,13 +1,12 @@
 <?php
 
+use App\Enums\OrderStatus;
 use App\Mail\OrderConfirmation;
 use App\Mail\OrderShipped;
 use App\Mail\PaymentFailed;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\User;
-use App\Services\PaymentGateway\PaymentGatewayInterface;
-use App\Services\PaymentGateway\PaymentProcessor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 
@@ -42,64 +41,6 @@ function mailableOrder(array $orderAttributes = []): array
     return [$user, $customer, $order];
 }
 
-/**
- * Swap the payment processor for one whose gateway returns $result.
- */
-function fakeGatewayReturning(array $result): void
-{
-    $gateway = new class($result) implements PaymentGatewayInterface
-    {
-        public function __construct(private array $result) {}
-
-        public function initiate(int $amountCents, string $currency, string $orderId, array $metadata = []): array
-        {
-            return $this->result;
-        }
-
-        public function confirm(string $paymentId, ?string $paymentMethodId = null): array
-        {
-            return $this->result;
-        }
-
-        public function refund(string $paymentId, ?int $amountCents = null): array
-        {
-            return ['status' => 'success'];
-        }
-
-        public function handleWebhook(array $payload): array
-        {
-            return ['status' => 'unhandled'];
-        }
-
-        public function verifyWebhookSignature(string $signature, string $body): bool
-        {
-            return true;
-        }
-
-        public function getName(): string
-        {
-            return 'Fake Gateway';
-        }
-
-        public function isConfigured(): bool
-        {
-            return true;
-        }
-    };
-
-    // Deliberately does not call parent::__construct(): that would build the
-    // real gateways, none of which are configured under test.
-    app()->instance(PaymentProcessor::class, new class($gateway) extends PaymentProcessor
-    {
-        public function __construct(private PaymentGatewayInterface $fake) {}
-
-        public function gateway(string $name): PaymentGatewayInterface
-        {
-            return $this->fake;
-        }
-    });
-}
-
 it('sends the order confirmation to the customer on the paid transition', function () {
     Mail::fake();
     [, $customer, $order] = mailableOrder();
@@ -116,12 +57,12 @@ it('confirms a payment without erroring on the confirmation email', function () 
     config(['mail.default' => 'array']);
 
     [$user, $customer, $order] = mailableOrder();
-    fakeGatewayReturning([
+    fakePaymentGateway(['confirm' => [
         'status' => 'success',
         'payment_id' => 'pi_test_123',
         'amount' => 4500,
         'currency' => 'ZAR',
-    ]);
+    ]]);
 
     // Previously 500'd: the mailable carried no recipient, so the observer
     // threw inside the confirmation transaction after the customer had paid.
@@ -130,7 +71,7 @@ it('confirms a payment without erroring on the confirmation email', function () 
         ->assertOk()
         ->assertJson(['status' => 'success']);
 
-    expect($order->fresh()->status)->toBe('paid');
+    expect($order->fresh()->status)->toBe(OrderStatus::Paid);
 
     $sent = app('mailer')->getSymfonyTransport()->messages();
 
@@ -164,5 +105,5 @@ it('skips the confirmation when the order has no customer to write to', function
     $order->update(['status' => 'paid']);
 
     Mail::assertNothingSent();
-    expect($order->fresh()->status)->toBe('paid');
+    expect($order->fresh()->status)->toBe(OrderStatus::Paid);
 });

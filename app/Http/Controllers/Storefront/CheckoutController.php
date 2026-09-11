@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Storefront;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Order;
@@ -146,7 +147,7 @@ class CheckoutController extends Controller
             $order = Order::create([
                 'order_number' => 'ORD-'.strtoupper(Str::random(10)),
                 'customer_id' => $customer->id,
-                'status' => 'pending',
+                'status' => OrderStatus::Pending,
                 'payment_status' => 'pending',
                 'subtotal_cents' => $totals->subtotalCents,
                 'tax_total_cents' => $totals->taxCents,
