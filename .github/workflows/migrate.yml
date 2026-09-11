@@ -85,6 +85,14 @@ jobs:
       - name: Migrate
         run: php artisan migrate --force
 
+      # A migration that adds a column invalidates every cached `select *`
+      # plan for that table, and Neon's pooled backends are long-lived enough
+      # to keep serving the stale one — which is a deterministic 500 on the
+      # affected pages until those backends are recycled. Drop the idle ones
+      # so the next request plans afresh.
+      - name: Clear stale query plans
+        run: php artisan db:clear-plan-cache
+
       # The storefront reads every image URL out of the database —
       # products.thumbnail_url, product_images.url, product_variants.image_url.
       # The files in public/images ship with the deployment, but nothing points
