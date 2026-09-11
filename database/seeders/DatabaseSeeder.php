@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -21,6 +20,8 @@ class DatabaseSeeder extends Seeder
             StorefrontProductSeeder::class,
             CatalogSeeder::class,
             StorefrontInventorySeeder::class,
+            // Last: takes ownership of the hoodie's variants and gallery.
+            DropSeeder::class,
         ]);
     }
 }

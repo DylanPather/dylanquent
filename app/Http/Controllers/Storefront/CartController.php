@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Storefront;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\Pricing\PricingService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
-use App\Services\Pricing\PricingService;
 
 class CartController extends Controller
 {
@@ -77,10 +77,13 @@ class CartController extends Controller
             'product_id' => $product->id,
             'product_slug' => $product->slug,
             'variant_id' => $variant?->id,
-            'name' => $product->name . ($variant && $variant->name ? " — {$variant->name}" : ''),
+            'name' => $product->name.($variant && $variant->name ? " — {$variant->name}" : ''),
             'price_cents' => $priceCents,
             'quantity' => $requested,
-            'thumbnail_url' => $product->images->firstWhere('is_primary', true)?->url
+            // The variant's own shot first, so a cart line shows the print that
+            // was actually chosen rather than the product's default photo.
+            'thumbnail_url' => $variant?->image_url
+                ?? $product->images->firstWhere('is_primary', true)?->url
                 ?? $product->images->first()?->url
                 ?? $product->thumbnail_url,
         ];

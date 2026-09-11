@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { Trash2, Edit, Plus, Shield } from 'lucide-react';
 import AppLayout from '../../../layouts/app-layout';
+import { Pagination } from '../../../components/pagination';
 
 interface User {
     id: number;
@@ -14,7 +15,7 @@ interface User {
 interface Props {
     users: {
         data: User[];
-        links: any;
+        links: { url: string | null; label: string; active: boolean }[];
         current_page: number;
         last_page: number;
     };
@@ -107,25 +108,13 @@ export default function UserIndex({ users }: Props) {
                     </div>
                 </div>
 
-                {/* Pagination */}
-                {users.last_page > 1 && (
-                    <div className="mt-8 flex items-center justify-center gap-2">
-                        {users.links.map((link, idx) => (
-                            <Link
-                                key={idx}
-                                href={link.url || '#'}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                                    link.active
-                                        ? 'bg-foreground text-background'
-                                        : link.url
-                                          ? 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700'
-                                          : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-400 cursor-not-allowed'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
-                )}
+                <Pagination
+                    links={users.links}
+                    currentPage={users.current_page}
+                    lastPage={users.last_page}
+                    label="Users"
+                    className="mt-8"
+                />
             </div>
         </AppLayout>
     );

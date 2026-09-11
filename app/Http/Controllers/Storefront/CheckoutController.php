@@ -3,21 +3,22 @@
 namespace App\Http\Controllers\Storefront;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\OrderItem;
-use App\Models\Customer;
+use App\Services\Pricing\PricingService;
+use App\Services\Shipping\ShippingRateProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Services\Pricing\PricingService;
+use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $cart = session()->get('cart', []);
 
@@ -28,11 +29,24 @@ class CheckoutController extends Controller
         $customer = auth()->user()->customer;
 
         $subtotal = collect($cart)->sum(fn ($i) => $i['price_cents'] * $i['quantity']);
+        $pricing = app(PricingService::class);
+
+        // Couriers cannot price a parcel without a destination, so rates are
+        // only quoted once the customer has entered a postal code. The page
+        // refreshes these two props as they type.
+        $postcode = $request->query('postal_code');
+        $rates = $postcode
+            ? app(ShippingRateProvider::class)->ratesFor($subtotal, $postcode)
+            : [];
 
         return Inertia::render('checkout/index', [
             'cart' => $cart,
             'customer' => $customer,
-            'totals' => app(PricingService::class)->forSubtotal($subtotal, session('shipping_method'))->toArray(),
+            'totals' => $pricing->forSubtotal($subtotal, session('shipping_method'))->toArray(),
+            'shippingRates' => array_map(fn ($r) => $r->toArray(), $rates),
+            'shippingTotals' => collect($rates)
+                ->mapWithKeys(fn ($r) => [$r->method => $pricing->forQuotedShipping($subtotal, $r->cents)->toArray()])
+                ->all(),
         ]);
     }
 
@@ -40,7 +54,9 @@ class CheckoutController extends Controller
     {
         $request->validate([
             'shipping_address' => 'required|array',
+            'shipping_address.postal_code' => 'required|string|max:10',
             'billing_address' => 'required|array',
+            'shipping_method' => 'nullable|string|max:60',
         ]);
 
         $cart = session()->get('cart', []);
@@ -80,7 +96,7 @@ class CheckoutController extends Controller
 
                 if ($item['variant_id'] && (! $variant || $variant->product_id !== $product->id)) {
                     throw ValidationException::withMessages([
-                        'cart' => "An option in your cart is no longer available.",
+                        'cart' => 'An option in your cart is no longer available.',
                     ]);
                 }
 
@@ -110,8 +126,22 @@ class CheckoutController extends Controller
                 ];
             }
 
-            // Uses whatever the customer selected in the cart.
-            $totals = app(PricingService::class)->forSubtotal($subtotal, session('shipping_method'));
+            // The delivery charge is re-quoted here from the submitted
+            // address. The browser sends only which option was chosen, never
+            // its price, so a tampered request cannot buy cheap shipping.
+            $postcode = $request->input('shipping_address.postal_code');
+            $chosen = $request->input('shipping_method') ?: session('shipping_method');
+
+            $available = app(ShippingRateProvider::class)->ratesFor($subtotal, $postcode);
+            $rate = collect($available)->firstWhere('method', $chosen) ?? collect($available)->first();
+
+            if (! $rate) {
+                throw ValidationException::withMessages([
+                    'shipping_method' => 'We could not price delivery to that address. Please check the postal code.',
+                ]);
+            }
+
+            $totals = app(PricingService::class)->forQuotedShipping($subtotal, $rate->cents);
 
             $order = Order::create([
                 'order_number' => 'ORD-'.strtoupper(Str::random(10)),
@@ -144,7 +174,7 @@ class CheckoutController extends Controller
         $order = Order::where('order_number', $request->order)->with('items')->firstOrFail();
 
         return Inertia::render('checkout/success', [
-            'order' => $order
+            'order' => $order,
         ]);
     }
 }

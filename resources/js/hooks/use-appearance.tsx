@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
 export type Appearance = 'light' | 'dark' | 'system';
 
@@ -47,6 +47,13 @@ export function initializeTheme() {
     mediaQuery()?.addEventListener('change', handleSystemThemeChange);
 }
 
+/**
+ * The saved choice is read before paint on the client, so a control showing
+ * which mode is active does not flash "system" first. useLayoutEffect does not
+ * run during server rendering, hence the swap.
+ */
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
 export function useAppearance() {
     const [appearance, setAppearance] = useState<Appearance>('system');
 
@@ -62,7 +69,7 @@ export function useAppearance() {
         applyTheme(mode);
     }, []);
 
-    useEffect(() => {
+    useIsomorphicLayoutEffect(() => {
         const savedAppearance = localStorage.getItem('appearance') as Appearance | null;
         updateAppearance(savedAppearance || 'system');
 

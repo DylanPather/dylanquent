@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\StorefrontSetting;
 use Inertia\Inertia;
-use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
@@ -15,7 +14,7 @@ class ProductController extends Controller
         $settings = StorefrontSetting::pluck('value', 'key');
 
         return Inertia::render('welcome', [
-            'storefrontSettings' => $settings
+            'storefrontSettings' => $settings,
         ]);
     }
 
@@ -32,13 +31,16 @@ class ProductController extends Controller
                     'slug' => $p->slug,
                     'price_cents' => $p->price_cents,
                     'currency' => $p->currency,
-                    'thumbnail_url' => $p->images()->where('is_primary', true)->first()?->url ?? $p->thumbnail_url,
-                    'is_available' => $p->variants->some(fn($v) => $v->inventoryLevels->sum('quantity') > 0),
+                    'thumbnail_url' => $p->images->firstWhere('is_primary', true)?->url ?? $p->thumbnail_url,
+                    // The card is unreadable for a five-print drop with one shot.
+                    'preview_urls' => $this->previewUrls($p),
+                    'categories' => $p->categories->pluck('name'),
+                    'is_available' => $p->variants->some(fn ($v) => $v->inventoryLevels->sum('quantity') > 0),
                 ];
             });
 
         return Inertia::render('shop/index', [
-            'products' => $products
+            'products' => $products,
         ]);
     }
 
@@ -51,6 +53,7 @@ class ProductController extends Controller
         // Per-product option values live on each variant's `attributes` JSON.
         $product->load([
             'variants.inventoryLevels',
+            'variants.images',
             'categories',
             'reviews' => fn ($q) => $q->where('is_visible', true)->latest()->with('user:id,name'),
             'images',
@@ -74,6 +77,13 @@ class ProductController extends Controller
                     'id' => $v->id,
                     'name' => $v->name ?: 'Standard',
                     'sku' => $v->sku,
+                    'image_url' => $v->image_url,
+                    // The angles this variant was shot from. A print that runs
+                    // across the back needs the back and the front, and which
+                    // pair you get depends on the print selected.
+                    'images' => $v->images
+                        ->map(fn ($i) => ['url' => $i->url, 'angle' => $i->angle])
+                        ->values(),
                     'price_cents' => $v->price_cents ?: $product->price_cents,
                     'compare_at_price_cents' => $v->compare_at_price_cents,
                     'attributes' => $v->attributes,
@@ -150,6 +160,47 @@ class ProductController extends Controller
             'thumbnail_url' => $p->images->firstWhere('is_primary', true)?->url
                 ?? $p->images->first()?->url
                 ?? $p->thumbnail_url,
+            'preview_urls' => $this->previewUrls($p),
         ])->values();
+    }
+
+    /**
+     * The shots a card cycles through.
+     *
+     * One per print, not one per print/colour pair: a card has a few seconds
+     * of a shopper's attention and should spend them showing the range of
+     * prints, not the same three prints twice in two colours. The colourways
+     * are the product page's job.
+     *
+     * Capped because a card is a glance, not the gallery — six shots at ~2.5
+     * seconds each is already fifteen seconds to see them all.
+     */
+    private function previewUrls(Product $p, int $limit = 6)
+    {
+        $withImages = $p->variants->filter(fn ($v) => $v->image_url);
+
+        if ($withImages->isNotEmpty()) {
+            return $withImages
+                // Variants with no print fall back to grouping by the photo
+                // itself, which is the same thing for a single-axis product.
+                ->groupBy(fn ($v) => $v->attributes['design'] ?? $v->image_url)
+                ->map(fn ($group) => $group->first()->image_url)
+                ->values()
+                ->take($limit);
+        }
+
+        $fromGallery = $p->images
+            ->sortBy([['is_primary', 'desc'], ['sort_order', 'asc']])
+            ->pluck('url')
+            ->filter()
+            ->unique()
+            ->take($limit)
+            ->values();
+
+        // Never hand back nothing: a product with neither variant shots nor a
+        // gallery still has to put something on its card.
+        return $fromGallery->isNotEmpty()
+            ? $fromGallery
+            : collect([$p->thumbnail_url])->filter()->values();
     }
 }

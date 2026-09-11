@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Storefront;
 
 use App\Models\Order;
-use App\Services\Inventory\StockLedger;
 use App\Services\PaymentGateway\PaymentProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,10 +11,7 @@ use Inertia\Inertia;
 
 class PaymentController
 {
-    public function __construct(
-        private PaymentProcessor $processor,
-        private StockLedger $stock,
-    ) {}
+    public function __construct(private PaymentProcessor $processor) {}
 
     /**
      * Show payment page with gateway selection
@@ -24,13 +20,13 @@ class PaymentController
     {
         $orderId = session('order_id');
 
-        if (!$orderId) {
+        if (! $orderId) {
             return redirect()->route('checkout.index')->with('error', 'No order found');
         }
 
         $order = Order::find($orderId);
 
-        if (!$order || $order->customer_id !== auth('customer')->id()) {
+        if (! $order || $order->customer_id !== auth('customer')->id()) {
             return redirect()->route('checkout.index')->with('error', 'Invalid order');
         }
 
@@ -158,13 +154,13 @@ class PaymentController
                 }
 
                 DB::transaction(function () use ($order, $result) {
+                    // OrderObserver draws the stock off the pending -> paid
+                    // transition, so this update is the whole job.
                     $order->update([
                         'payment_id' => $result['payment_id'],
                         'payment_status' => 'paid',
                         'status' => 'paid',
                     ]);
-
-                    $this->stock->sell($order);
                 });
 
                 session()->forget(['order_id', 'cart']);
@@ -177,10 +173,12 @@ class PaymentController
 
             if ($result['status'] === 'processing') {
                 $order->update(['payment_status' => 'processing']);
+
                 return response()->json($result);
             }
 
             $order->update(['payment_status' => 'failed']);
+
             return response()->json($result, 422);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -198,7 +196,7 @@ class PaymentController
 
             $processor = $this->processor->gateway($gateway);
 
-            if (!$processor->verifyWebhookSignature($signature, $request->getContent())) {
+            if (! $processor->verifyWebhookSignature($signature, $request->getContent())) {
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
 
@@ -209,17 +207,13 @@ class PaymentController
 
                 if ($order) {
                     DB::transaction(function () use ($order, $result) {
-                        $wasPaid = $order->payment_status === 'paid';
-
+                        // Gateways retry webhooks. OrderObserver draws stock off
+                        // the pending -> paid transition, so a replay that finds
+                        // the order already paid moves no stock.
                         $order->update([
                             'payment_status' => $result['status'],
                             'status' => $result['status'] === 'paid' ? 'paid' : $order->status,
                         ]);
-
-                        // Gateways retry webhooks; only draw stock on the transition.
-                        if (! $wasPaid && $result['status'] === 'paid') {
-                            $this->stock->sell($order);
-                        }
 
                         if ($result['status'] === 'failed') {
                             event(new \App\Events\PaymentFailed($order, $result['reason'] ?? 'Unknown'));
@@ -230,7 +224,8 @@ class PaymentController
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            \Log::error("Webhook error for gateway {$gateway}: " . $e->getMessage());
+            \Log::error("Webhook error for gateway {$gateway}: ".$e->getMessage());
+
             return response()->json(['error' => 'Webhook processing failed'], 500);
         }
     }
