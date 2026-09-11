@@ -43,9 +43,12 @@ const ANY = 'any';
 const money = (cents: number) => 'R' + (cents / 100).toLocaleString('en-ZA', { minimumFractionDigits: 2 });
 const titleCase = (s: string) => s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+// Keyed by both order status (App\Enums\OrderStatus) and payment status.
 const STATUS_TONE: Record<string, string> = {
     pending: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    payment_failed: 'bg-red-500/10 text-red-700 dark:text-red-400',
     paid: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+    processing: 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
     fulfilled: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
     cancelled: 'bg-muted text-muted-foreground',
     refunded: 'bg-muted text-muted-foreground',

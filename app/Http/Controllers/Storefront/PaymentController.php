@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Storefront;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\PaymentGateway\PaymentProcessor;
 use Illuminate\Http\Request;
@@ -145,7 +146,11 @@ class PaymentController
                         'received' => $paidAmount.' '.$paidCurrency,
                     ]);
 
-                    $order->update(['payment_status' => 'failed']);
+                    $order->update([
+                        'payment_status' => 'failed',
+                        'status' => OrderStatus::PaymentFailed,
+                        'payment_failure_reason' => 'The amount captured did not match the order total.',
+                    ]);
 
                     return response()->json([
                         'status' => 'failed',
@@ -159,7 +164,8 @@ class PaymentController
                     $order->update([
                         'payment_id' => $result['payment_id'],
                         'payment_status' => 'paid',
-                        'status' => 'paid',
+                        'status' => OrderStatus::Paid,
+                        'payment_failure_reason' => null,
                     ]);
                 });
 
@@ -177,7 +183,14 @@ class PaymentController
                 return response()->json($result);
             }
 
-            $order->update(['payment_status' => 'failed']);
+            // The status moves too, not just payment_status: OrderObserver
+            // watches orders.status, and this is what puts the "payment
+            // failed" email in front of the customer.
+            $order->update([
+                'payment_status' => 'failed',
+                'status' => OrderStatus::PaymentFailed,
+                'payment_failure_reason' => $result['message'] ?? null,
+            ]);
 
             return response()->json($result, 422);
         } catch (\Exception $e) {
@@ -210,14 +223,22 @@ class PaymentController
                         // Gateways retry webhooks. OrderObserver draws stock off
                         // the pending -> paid transition, so a replay that finds
                         // the order already paid moves no stock.
-                        $order->update([
+                        $attributes = [
                             'payment_status' => $result['status'],
-                            'status' => $result['status'] === 'paid' ? 'paid' : $order->status,
-                        ]);
+                            'status' => $this->orderStatusFor($result['status'], $order),
+                        ];
 
+                        // A failure used to dispatch App\Events\PaymentFailed,
+                        // a class that does not exist and that nothing listened
+                        // for: the dispatch fatalled, the catch below turned it
+                        // into a 500, and the gateway retried a webhook that
+                        // could never succeed. The status carries it now, and
+                        // OrderObserver sends the mail.
                         if ($result['status'] === 'failed') {
-                            event(new \App\Events\PaymentFailed($order, $result['reason'] ?? 'Unknown'));
+                            $attributes['payment_failure_reason'] = $result['reason'] ?? null;
                         }
+
+                        $order->update($attributes);
                     });
                 }
             }
@@ -228,6 +249,21 @@ class PaymentController
 
             return response()->json(['error' => 'Webhook processing failed'], 500);
         }
+    }
+
+    /**
+     * The order status a gateway payment status puts the order into.
+     *
+     * Only 'paid' and 'failed' say anything about the order itself; anything
+     * else the gateway reports is a payment detail and leaves it alone.
+     */
+    private function orderStatusFor(string $paymentStatus, Order $order): OrderStatus
+    {
+        return match ($paymentStatus) {
+            'paid' => OrderStatus::Paid,
+            'failed' => OrderStatus::PaymentFailed,
+            default => $order->status,
+        };
     }
 
     /**

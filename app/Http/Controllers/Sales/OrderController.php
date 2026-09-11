@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Sales;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\PaymentGateway\PaymentProcessor;
 use App\Services\ShippingService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -66,7 +68,7 @@ class OrderController extends Controller
         return Inertia::render('sales/orders/index', [
             'orders' => $orders,
             'filters' => $filters,
-            'statuses' => ['pending', 'paid', 'fulfilled', 'cancelled', 'refunded', 'partially_refunded'],
+            'statuses' => OrderStatus::values(),
             'paymentStatuses' => ['pending', 'paid', 'failed', 'refunded'],
             'stats' => [
                 'total' => Order::count(),
@@ -115,7 +117,7 @@ class OrderController extends Controller
                     'total_cents' => $item->total_cents,
                 ]),
             ],
-            'availableStatuses' => ['pending', 'paid', 'processing', 'fulfilled', 'shipped', 'cancelled', 'refunded'],
+            'availableStatuses' => OrderStatus::values(),
             'availableCarriers' => $this->shippingService->getCarriers(),
         ]);
     }
@@ -148,7 +150,7 @@ class OrderController extends Controller
 
             if ($result['status'] === 'success') {
                 $order->update([
-                    'status' => 'refunded',
+                    'status' => OrderStatus::Refunded,
                     'payment_status' => 'refunded',
                 ]);
 
@@ -157,14 +159,14 @@ class OrderController extends Controller
 
             return back()->with('error', $result['message'] ?? 'Refund failed');
         } catch (\Exception $e) {
-            return back()->with('error', 'Refund error: ' . $e->getMessage());
+            return back()->with('error', 'Refund error: '.$e->getMessage());
         }
     }
 
     public function updateStatus(Request $request, Order $order)
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:pending,paid,processing,fulfilled,shipped,cancelled,refunded',
+            'status' => ['required', Rule::enum(OrderStatus::class)],
             'notes' => 'nullable|string',
         ]);
 
@@ -176,4 +178,3 @@ class OrderController extends Controller
         return back()->with('message', 'Order status updated');
     }
 }
-

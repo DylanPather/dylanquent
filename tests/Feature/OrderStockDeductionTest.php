@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OrderStatus;
 use App\Models\Customer;
 use App\Models\InventoryLevel;
 use App\Models\InventoryMovement;
@@ -9,8 +10,6 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\Warehouse;
-use App\Services\PaymentGateway\PaymentGatewayInterface;
-use App\Services\PaymentGateway\PaymentProcessor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 
@@ -68,63 +67,10 @@ function stockOnHand(ProductVariant $variant): int
     return (int) InventoryLevel::where('product_variant_id', $variant->id)->sum('quantity');
 }
 
-function confirmPaymentAs(User $user, Order $order, string $status = 'paid'): void
-{
-    $gateway = new class($status) implements PaymentGatewayInterface
-    {
-        public function __construct(private string $status) {}
-
-        public function initiate(int $amountCents, string $currency, string $orderId, array $metadata = []): array
-        {
-            return ['status' => 'success'];
-        }
-
-        public function confirm(string $paymentId, ?string $paymentMethodId = null): array
-        {
-            return ['status' => 'success', 'payment_id' => 'pi_1', 'amount' => 4500, 'currency' => 'ZAR'];
-        }
-
-        public function refund(string $paymentId, ?int $amountCents = null): array
-        {
-            return ['status' => 'success'];
-        }
-
-        public function handleWebhook(array $payload): array
-        {
-            return ['status' => $this->status, 'order_id' => $payload['order_id'] ?? null];
-        }
-
-        public function verifyWebhookSignature(string $signature, string $body): bool
-        {
-            return true;
-        }
-
-        public function getName(): string
-        {
-            return 'Fake Gateway';
-        }
-
-        public function isConfigured(): bool
-        {
-            return true;
-        }
-    };
-
-    app()->instance(PaymentProcessor::class, new class($gateway) extends PaymentProcessor
-    {
-        public function __construct(private PaymentGatewayInterface $fake) {}
-
-        public function gateway(string $name): PaymentGatewayInterface
-        {
-            return $this->fake;
-        }
-    });
-}
-
 it('draws stock exactly once when a payment is confirmed', function () {
     Mail::fake();
     [$user, $order, $variant] = stockedOrder(quantity: 2, stockByWarehouse: ['JHB-01' => 10]);
-    confirmPaymentAs($user, $order);
+    fakePaymentGateway();
 
     $this->actingAs($user)
         ->postJson('/payment/confirm', ['order_id' => $order->id, 'payment_id' => 'pi_1'])
@@ -146,13 +92,13 @@ it('draws stock when an admin marks the order paid by hand', function () {
 it('does not draw stock again when the gateway replays the webhook', function () {
     Mail::fake();
     [$user, $order, $variant] = stockedOrder(quantity: 2);
-    confirmPaymentAs($user, $order);
+    fakePaymentGateway(['webhook' => ['status' => 'paid']]);
 
     foreach (range(1, 3) as $attempt) {
         $this->postJson('/webhooks/payment/stripe', ['order_id' => $order->id])->assertOk();
     }
 
-    expect($order->fresh()->status)->toBe('paid')
+    expect($order->fresh()->status)->toBe(OrderStatus::Paid)
         ->and(stockOnHand($variant))->toBe(8);
 });
 
@@ -192,6 +138,6 @@ it('still marks the order paid when stock runs short', function () {
 
     $order->update(['status' => 'paid']);
 
-    expect($order->fresh()->status)->toBe('paid')
+    expect($order->fresh()->status)->toBe(OrderStatus::Paid)
         ->and(stockOnHand($variant))->toBe(0);
 });

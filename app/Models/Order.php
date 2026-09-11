@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,7 @@ class Order extends Model
         'shipping_address',
         'placed_at',
         'notes',
+        'payment_failure_reason',
         'payment_gateway',
         'payment_id',
         'payment_status',
@@ -33,6 +35,10 @@ class Order extends Model
     ];
 
     protected $casts = [
+        // The vocabulary lives in the enum, not the column. Casting here is
+        // what enforces it: assigning a status outside OrderStatus throws
+        // on write instead of quietly persisting a value nothing reacts to.
+        'status' => OrderStatus::class,
         'billing_address' => 'array',
         'shipping_address' => 'array',
         'placed_at' => 'datetime',
@@ -54,4 +60,3 @@ class Order extends Model
         return $this->hasMany(ShipmentLabel::class);
     }
 }
-
