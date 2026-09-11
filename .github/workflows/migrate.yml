@@ -43,7 +43,15 @@ jobs:
       # workflow needs exactly one secret.
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       DB_CONNECTION: pgsql
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # Migrations must NOT go through Neon's pooled endpoint. PgBouncer in
+      # transaction mode moves statements between backends mid-transaction, so
+      # a migration's DDL can be rolled back while its row in the migrations
+      # table commits — leaving the log claiming a migration ran when the
+      # column it adds does not exist. That happened to
+      # add_image_url_to_product_variants_table and had to be repaired by hand.
+      # DATABASE_URL_UNPOOLED is Neon's direct endpoint; keep this secret set
+      # to that one, and DATABASE_URL is only a fallback.
+      DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED || secrets.DATABASE_URL }}
       ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
       LOG_CHANNEL: stderr
 
@@ -54,9 +62,12 @@ jobs:
       - name: Stop early if the database secret is missing
         run: |
           if [ -z "${DATABASE_URL}" ]; then
-            echo "::error::DATABASE_URL is not set. Add it under Settings → Secrets and variables → Actions, using the Neon connection string from the Vercel dashboard (Storage → your Postgres → .env.local tab)."
+            echo "::error::No database secret set. Add DATABASE_URL_UNPOOLED under Settings → Secrets and variables → Actions, using the value of the same name from the Vercel dashboard (Storage → your Postgres → .env.local tab). It must be the unpooled endpoint — migrating through the pooler can record a migration as run without applying it."
             exit 1
           fi
+          case "${DATABASE_URL}" in
+            *-pooler.*) echo "::warning::This looks like Neon's POOLED endpoint. Migrations should use DATABASE_URL_UNPOOLED — the pooler can commit the migrations row while rolling back the DDL." ;;
+          esac
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
