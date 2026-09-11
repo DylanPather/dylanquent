@@ -17,8 +17,14 @@ on:
   push:
     branches:
       - main
-  # Lets you re-run migrations from the Actions tab without pushing anything.
+  # Lets you re-run migrations from the Actions tab without pushing anything,
+  # and seed the catalog — which is what puts image URLs in the database.
   workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Also run the seeders (needed once — this is what gives products their images)'
+        type: boolean
+        default: false
 
 # Never let two migration runs overlap on the same database.
 concurrency:
@@ -38,6 +44,7 @@ jobs:
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       DB_CONNECTION: pgsql
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
       LOG_CHANNEL: stderr
 
     steps:
@@ -66,3 +73,21 @@ jobs:
 
       - name: Migrate
         run: php artisan migrate --force
+
+      # The storefront reads every image URL out of the database —
+      # products.thumbnail_url, product_images.url, product_variants.image_url.
+      # The files in public/images ship with the deployment, but nothing points
+      # at them until DropSeeder has run, which is why a freshly deployed shop
+      # shows no imagery. Seeders use updateOrCreate throughout, so this is
+      # safe to re-run.
+      - name: Refuse to seed without an admin password
+        if: inputs.seed
+        run: |
+          if [ -z "${ADMIN_PASSWORD}" ]; then
+            echo "::error::Seeding needs an ADMIN_PASSWORD secret. Without one AdminUserSeeder either generates a password and prints it into this log, or — because GitHub passes an unset secret as an empty string — creates the admin with a blank password. Add ADMIN_PASSWORD under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Seed
+        if: inputs.seed
+        run: php artisan db:seed --force
