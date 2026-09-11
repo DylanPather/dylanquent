@@ -37,7 +37,7 @@ it('creates orders in the store currency, not USD', function () {
         ->post('/cart/add', ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 2]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd', 'city' => 'Johannesburg'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'city' => 'Johannesburg', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd', 'city' => 'Johannesburg'],
     ])->assertRedirect();
 
@@ -55,7 +55,7 @@ it('prices the order from the database, not the cart snapshot', function () {
     $variant->update(['price_cents' => 9900]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
@@ -73,7 +73,7 @@ it('refuses checkout when stock ran out after adding to cart', function () {
     InventoryLevel::where('product_variant_id', $variant->id)->update(['quantity' => 1]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ])->assertSessionHasErrors('cart');
 
@@ -108,7 +108,7 @@ it('writes shipping into the order total', function () {
         ->post('/cart/add', ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 2]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
@@ -133,7 +133,7 @@ it('drops shipping from the order above the threshold', function () {
         ->post('/cart/add', ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 2]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
@@ -154,7 +154,7 @@ it('carries the chosen delivery method into the order', function () {
     $this->actingAs($user)->post('/cart/shipping-method', ['method' => 'locker']);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
