@@ -6,6 +6,16 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Database\Seeder;
 
+/**
+ * The two blanks the First Drop is printed on.
+ *
+ * DropSeeder runs after this one and takes ownership of their prints,
+ * galleries and variants — the plain size-only rows written here exist so the
+ * products are usable on their own if the drop seeder is skipped.
+ *
+ * Pricing rationale lives in DropSeeder, which is where a print run's cost is
+ * written down; keep the two in step.
+ */
 class StorefrontProductSeeder extends Seeder
 {
     public function run(): void
@@ -15,7 +25,7 @@ class StorefrontProductSeeder extends Seeder
                 'name' => 'Boxy Tee',
                 'slug' => 'boxy-tee',
                 'description' => 'A relaxed, heavy-weight cotton tee with a structural silhouette.',
-                'price_cents' => 49500,
+                'price_cents' => 44900,
                 'is_active' => true,
                 'sku' => 'DQ-TEE-01',
                 'thumbnail_url' => '/images/products/boxy_tee_black_1769346857146.png',
@@ -25,31 +35,11 @@ class StorefrontProductSeeder extends Seeder
                 'name' => 'Heavy Hoodie',
                 'slug' => 'heavy-hoodie',
                 'description' => '400GSM fleece hoodie with a minimal, sharp cut.',
-                'price_cents' => 99500,
+                'price_cents' => 89900,
                 'is_active' => true,
                 'sku' => 'DQ-HD-01',
                 'thumbnail_url' => '/images/products/heavy_hoodie_grey_1769346878833.png',
                 'variants' => ['Small', 'Medium', 'Large'],
-            ],
-            [
-                'name' => 'Cargo Trouser',
-                'slug' => 'cargo-trouser',
-                'description' => 'Military-inspired geometry with daily utility.',
-                'price_cents' => 89500,
-                'is_active' => true,
-                'sku' => 'DQ-TR-01',
-                'thumbnail_url' => '/images/products/cargo_pants_olive_1769346899867.png',
-                'variants' => ['30', '32', '34'],
-            ],
-            [
-                'name' => 'Signature Cap',
-                'slug' => 'signature-cap',
-                'description' => 'A low-profile cap with the Dylanquent archive mark.',
-                'price_cents' => 39500,
-                'is_active' => true,
-                'sku' => 'DQ-CP-01',
-                'thumbnail_url' => '/images/products/streetwear_cap_black_1769346921972.png',
-                'variants' => ['One Size'],
             ],
         ];
 

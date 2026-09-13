@@ -38,13 +38,11 @@ class StorefrontInventorySeeder extends Seeder
 
         // Each product gets its own shot and nothing else. This seeder used to
         // pad every gallery out to three with whatever else was in public/,
-        // which put a hoodie and a tee in the cap's gallery — visible now that
-        // the storefront cards cycle through a product's shots.
+        // which put a hoodie in the tee's gallery — visible now that the
+        // storefront cards cycle through a product's shots.
         $stockPhotos = [
             '/images/products/boxy_tee_black_1769346857146.png',
             '/images/products/heavy_hoodie_grey_1769346878833.png',
-            '/images/products/cargo_pants_olive_1769346899867.png',
-            '/images/products/streetwear_cap_black_1769346921972.png',
         ];
 
         foreach (Product::all() as $product) {

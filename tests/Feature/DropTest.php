@@ -138,10 +138,10 @@ it('gives cards the shots they need to cycle', function () {
     // of prints and leaves the colourways to the product page.
     expect($tee['preview_urls'])->toHaveCount(5);
 
-    // And a product with a single photograph gives the card nothing to cycle.
-    $cap = collect($cards)->firstWhere('slug', 'signature-cap');
+    // And one per print, not per angle, on a product shot front and back.
+    $dev = collect($cards)->firstWhere('slug', 'development-tee');
 
-    expect($cap['preview_urls'])->toHaveCount(1);
+    expect($dev['preview_urls'])->toHaveCount(5);
 });
 
 it('carries the chosen print and colour onto the cart line', function () {
