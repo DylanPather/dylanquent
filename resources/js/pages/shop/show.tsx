@@ -155,12 +155,18 @@ export default function Show() {
                 v.attributes?.size === sizeName,
         ) ?? null;
 
+    /**
+     * A print's swatch image, preferring the colour currently chosen.
+     *
+     * Not every drop is a full print x colour matrix. The Development Hoodie's
+     * prints are each set on a single body colour, so asking for "Ship It in
+     * Black" finds nothing — fall back to the print's own colourway rather
+     * than rendering a broken image.
+     */
     const imageFor = (designName: string, colourName: string | null) =>
-        variants.find(
-            (v) =>
-                v.attributes?.design === designName &&
-                (colourName === null || v.attributes?.colour === colourName),
-        )?.image_url ?? null;
+        (variants.find(
+            (v) => v.attributes?.design === designName && v.attributes?.colour === colourName,
+        ) ?? variants.find((v) => v.attributes?.design === designName))?.image_url ?? null;
 
     /**
      * The gallery is the selected variant's own angles.
@@ -233,13 +239,19 @@ export default function Show() {
         );
     };
 
+    /**
+     * Picking a print keeps the colour where the drop offers that pair, and
+     * otherwise moves to the colourway the print was set on — the print is
+     * what the shopper asked for, so it wins over a colour they did not
+     * change. Picking a colour resolves the same way in reverse.
+     */
     const selectDesign = (name: string) => {
-        const next = pick(name, colour);
+        const next = pick(name, colour) ?? pick(name, null);
         if (next) selectVariant(next);
     };
 
     const selectColour = (name: string) => {
-        const next = pick(design, name);
+        const next = pick(design, name) ?? pick(null, name);
         if (next) selectVariant(next);
     };
 
@@ -248,15 +260,31 @@ export default function Show() {
         if (next) selectVariant(next);
     };
 
-    /** Whether anything in this print, or this colour of it, can be bought. */
+    /**
+     * Whether anything in this print, or this colour, can be bought.
+     *
+     * The other axis narrows the question only where the drop actually offers
+     * that pair. A print sold in one colourway is not sold out because the
+     * shopper is looking at a different colour — selecting it moves them, so
+     * it has to read as available.
+     */
+    const offered = (designName: string, colourName: string) =>
+        variants.some((v) => v.attributes?.design === designName && v.attributes?.colour === colourName);
+
     const designInStock = (name: string) =>
         variants.some(
-            (v) => v.attributes?.design === name && (!colour || v.attributes?.colour === colour) && v.is_available,
+            (v) =>
+                v.attributes?.design === name &&
+                (!colour || !offered(name, colour) || v.attributes?.colour === colour) &&
+                v.is_available,
         );
 
     const colourInStock = (name: string) =>
         variants.some(
-            (v) => v.attributes?.colour === name && (!design || v.attributes?.design === design) && v.is_available,
+            (v) =>
+                v.attributes?.colour === name &&
+                (!design || !offered(design, name) || v.attributes?.design === design) &&
+                v.is_available,
         );
 
     const addToCart = () => {
