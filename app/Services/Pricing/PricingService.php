@@ -38,6 +38,25 @@ class PricingService
         );
     }
 
+    /**
+     * Build totals from a delivery charge that has already been quoted,
+     * so a live courier rate flows through the same tax and total logic.
+     */
+    public function forQuotedShipping(int $subtotalCents, int $shippingCents): OrderTotals
+    {
+        [$tax, $total] = $this->taxFor($subtotalCents + $shippingCents);
+
+        return new OrderTotals(
+            subtotalCents: $subtotalCents,
+            shippingCents: $shippingCents,
+            taxCents: $tax,
+            totalCents: $total,
+            taxInclusive: (bool) config('store.tax.inclusive'),
+            taxLabel: (string) config('store.tax.label'),
+            freeShippingRemainingCents: $this->remainingForFreeShipping($subtotalCents),
+        );
+    }
+
     public function shippingFor(int $subtotalCents, ?string $method = null): int
     {
         return $this->resolveRate($subtotalCents, $method)?->cents ?? 0;

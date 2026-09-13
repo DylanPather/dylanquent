@@ -1,5 +1,8 @@
 <?php
 
+use App\Services\PaymentGateway\PaymentGatewayInterface;
+use App\Services\PaymentGateway\PaymentProcessor;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -41,7 +44,75 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Swap the payment processor for one whose only gateway returns canned results.
+ *
+ * Every gateway the real PaymentProcessor registers reads its credentials in
+ * its constructor, so simply resolving it under test fatals on an unset
+ * config. Binding an instance sidesteps that and lets a test say what the
+ * gateway replied.
+ *
+ * @param  array{initiate?: array, confirm?: array, refund?: array, webhook?: array}  $responses
+ */
+function fakePaymentGateway(array $responses = []): void
 {
-    // ..
+    $responses = array_merge([
+        'initiate' => ['status' => 'success', 'payment_id' => 'pi_1'],
+        'confirm' => ['status' => 'success', 'payment_id' => 'pi_1', 'amount' => 4500, 'currency' => 'ZAR'],
+        'refund' => ['status' => 'success'],
+        'webhook' => ['status' => 'unhandled'],
+    ], $responses);
+
+    $gateway = new class($responses) implements PaymentGatewayInterface
+    {
+        public function __construct(private array $responses) {}
+
+        public function initiate(int $amountCents, string $currency, string $orderId, array $metadata = []): array
+        {
+            return $this->responses['initiate'];
+        }
+
+        public function confirm(string $paymentId, ?string $paymentMethodId = null): array
+        {
+            return $this->responses['confirm'];
+        }
+
+        public function refund(string $paymentId, ?int $amountCents = null): array
+        {
+            return $this->responses['refund'];
+        }
+
+        public function handleWebhook(array $payload): array
+        {
+            // The order id comes off the payload unless the test pinned one.
+            return $this->responses['webhook'] + ['order_id' => $payload['order_id'] ?? null];
+        }
+
+        public function verifyWebhookSignature(string $signature, string $body): bool
+        {
+            return true;
+        }
+
+        public function getName(): string
+        {
+            return 'Fake Gateway';
+        }
+
+        public function isConfigured(): bool
+        {
+            return true;
+        }
+    };
+
+    // Deliberately does not call parent::__construct(): that would build the
+    // real gateways, none of which are configured under test.
+    app()->instance(PaymentProcessor::class, new class($gateway) extends PaymentProcessor
+    {
+        public function __construct(private PaymentGatewayInterface $fake) {}
+
+        public function gateway(string $name): PaymentGatewayInterface
+        {
+            return $this->fake;
+        }
+    });
 }

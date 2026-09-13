@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Storefront;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
-use App\Models\InventoryLevel;
 use App\Services\PaymentGateway\PaymentProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,13 +21,13 @@ class PaymentController
     {
         $orderId = session('order_id');
 
-        if (!$orderId) {
+        if (! $orderId) {
             return redirect()->route('checkout.index')->with('error', 'No order found');
         }
 
         $order = Order::find($orderId);
 
-        if (!$order || $order->customer_id !== auth('customer')->id()) {
+        if (! $order || $order->customer_id !== auth('customer')->id()) {
             return redirect()->route('checkout.index')->with('error', 'Invalid order');
         }
 
@@ -146,7 +146,11 @@ class PaymentController
                         'received' => $paidAmount.' '.$paidCurrency,
                     ]);
 
-                    $order->update(['payment_status' => 'failed']);
+                    $order->update([
+                        'payment_status' => 'failed',
+                        'status' => OrderStatus::PaymentFailed,
+                        'payment_failure_reason' => 'The amount captured did not match the order total.',
+                    ]);
 
                     return response()->json([
                         'status' => 'failed',
@@ -155,13 +159,14 @@ class PaymentController
                 }
 
                 DB::transaction(function () use ($order, $result) {
+                    // OrderObserver draws the stock off the pending -> paid
+                    // transition, so this update is the whole job.
                     $order->update([
                         'payment_id' => $result['payment_id'],
                         'payment_status' => 'paid',
-                        'status' => 'paid',
+                        'status' => OrderStatus::Paid,
+                        'payment_failure_reason' => null,
                     ]);
-
-                    $this->reduceStock($order);
                 });
 
                 session()->forget(['order_id', 'cart']);
@@ -174,10 +179,19 @@ class PaymentController
 
             if ($result['status'] === 'processing') {
                 $order->update(['payment_status' => 'processing']);
+
                 return response()->json($result);
             }
 
-            $order->update(['payment_status' => 'failed']);
+            // The status moves too, not just payment_status: OrderObserver
+            // watches orders.status, and this is what puts the "payment
+            // failed" email in front of the customer.
+            $order->update([
+                'payment_status' => 'failed',
+                'status' => OrderStatus::PaymentFailed,
+                'payment_failure_reason' => $result['message'] ?? null,
+            ]);
+
             return response()->json($result, 422);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -187,49 +201,6 @@ class PaymentController
     /**
      * Handle webhook from payment gateway
      */
-    /**
-     * Draw the ordered quantities out of inventory.
-     *
-     * Nothing reduced stock when an order was paid, so the same unit could be
-     * sold indefinitely. Levels are drained warehouse by warehouse.
-     */
-    private function reduceStock(Order $order): void
-    {
-        $order->loadMissing('items');
-
-        foreach ($order->items as $item) {
-            if (! $item->product_variant_id) {
-                continue;
-            }
-
-            $remaining = (int) $item->quantity;
-
-            $levels = InventoryLevel::where('product_variant_id', $item->product_variant_id)
-                ->where('quantity', '>', 0)
-                ->lockForUpdate()
-                ->orderByDesc('quantity')
-                ->get();
-
-            foreach ($levels as $level) {
-                if ($remaining <= 0) {
-                    break;
-                }
-
-                $take = min($remaining, (int) $level->quantity);
-                $level->decrement('quantity', $take);
-                $remaining -= $take;
-            }
-
-            if ($remaining > 0) {
-                Log::warning('Order paid with insufficient stock on hand', [
-                    'order_id' => $order->id,
-                    'variant_id' => $item->product_variant_id,
-                    'short_by' => $remaining,
-                ]);
-            }
-        }
-    }
-
     public function webhook(Request $request, string $gateway)
     {
         try {
@@ -238,7 +209,7 @@ class PaymentController
 
             $processor = $this->processor->gateway($gateway);
 
-            if (!$processor->verifyWebhookSignature($signature, $request->getContent())) {
+            if (! $processor->verifyWebhookSignature($signature, $request->getContent())) {
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
 
@@ -249,30 +220,50 @@ class PaymentController
 
                 if ($order) {
                     DB::transaction(function () use ($order, $result) {
-                        $wasPaid = $order->payment_status === 'paid';
-
-                        $order->update([
+                        // Gateways retry webhooks. OrderObserver draws stock off
+                        // the pending -> paid transition, so a replay that finds
+                        // the order already paid moves no stock.
+                        $attributes = [
                             'payment_status' => $result['status'],
-                            'status' => $result['status'] === 'paid' ? 'paid' : $order->status,
-                        ]);
+                            'status' => $this->orderStatusFor($result['status'], $order),
+                        ];
 
-                        // Gateways retry webhooks; only draw stock on the transition.
-                        if (! $wasPaid && $result['status'] === 'paid') {
-                            $this->reduceStock($order);
-                        }
-
+                        // A failure used to dispatch App\Events\PaymentFailed,
+                        // a class that does not exist and that nothing listened
+                        // for: the dispatch fatalled, the catch below turned it
+                        // into a 500, and the gateway retried a webhook that
+                        // could never succeed. The status carries it now, and
+                        // OrderObserver sends the mail.
                         if ($result['status'] === 'failed') {
-                            event(new \App\Events\PaymentFailed($order, $result['reason'] ?? 'Unknown'));
+                            $attributes['payment_failure_reason'] = $result['reason'] ?? null;
                         }
+
+                        $order->update($attributes);
                     });
                 }
             }
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            \Log::error("Webhook error for gateway {$gateway}: " . $e->getMessage());
+            \Log::error("Webhook error for gateway {$gateway}: ".$e->getMessage());
+
             return response()->json(['error' => 'Webhook processing failed'], 500);
         }
+    }
+
+    /**
+     * The order status a gateway payment status puts the order into.
+     *
+     * Only 'paid' and 'failed' say anything about the order itself; anything
+     * else the gateway reports is a payment detail and leaves it alone.
+     */
+    private function orderStatusFor(string $paymentStatus, Order $order): OrderStatus
+    {
+        return match ($paymentStatus) {
+            'paid' => OrderStatus::Paid,
+            'failed' => OrderStatus::PaymentFailed,
+            default => $order->status,
+        };
     }
 
     /**

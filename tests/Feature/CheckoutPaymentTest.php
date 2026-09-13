@@ -2,12 +2,14 @@
 
 use App\Models\Customer;
 use App\Models\InventoryLevel;
+use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
@@ -37,7 +39,7 @@ it('creates orders in the store currency, not USD', function () {
         ->post('/cart/add', ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 2]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd', 'city' => 'Johannesburg'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'city' => 'Johannesburg', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd', 'city' => 'Johannesburg'],
     ])->assertRedirect();
 
@@ -55,7 +57,7 @@ it('prices the order from the database, not the cart snapshot', function () {
     $variant->update(['price_cents' => 9900]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
@@ -73,7 +75,7 @@ it('refuses checkout when stock ran out after adding to cart', function () {
     InventoryLevel::where('product_variant_id', $variant->id)->update(['quantity' => 1]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ])->assertSessionHasErrors('cart');
 
@@ -108,7 +110,7 @@ it('writes shipping into the order total', function () {
         ->post('/cart/add', ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 2]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
@@ -133,7 +135,7 @@ it('drops shipping from the order above the threshold', function () {
         ->post('/cart/add', ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 2]);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
@@ -154,7 +156,7 @@ it('carries the chosen delivery method into the order', function () {
     $this->actingAs($user)->post('/cart/shipping-method', ['method' => 'locker']);
 
     $this->actingAs($user)->post('/checkout', [
-        'shipping_address' => ['line1' => '1 Main Rd'],
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '2001'],
         'billing_address' => ['line1' => '1 Main Rd'],
     ]);
 
@@ -168,4 +170,120 @@ it('rejects an unknown delivery method', function () {
     $this->actingAs(User::factory()->create())
         ->post('/cart/shipping-method', ['method' => 'teleportation'])
         ->assertSessionHasErrors('method');
+});
+
+/*
+ * Stock is drawn down exactly once per paid order.
+ *
+ * Two independent paths used to deduct on the same `pending -> paid`
+ * transition: OrderObserver::deductInventory and PaymentController::reduceStock.
+ * Paying for two units took four off the shelf.
+ */
+
+/** Take an order through checkout and leave it pending against a fake gateway. */
+function pendingOrder(User $user, ProductVariant $variant, Product $product, int $quantity = 2): Order
+{
+    // The paid transition sends the customer their confirmation. Unrelated to
+    // stock, faked so it stays out of the way.
+    Mail::fake();
+
+    $this_ = test();
+
+    $this_->actingAs($user)->post('/cart/add', [
+        'product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => $quantity,
+    ]);
+
+    $this_->actingAs($user)->post('/checkout', [
+        // postal_code is what the courier rate lookup quotes against.
+        'shipping_address' => ['line1' => '1 Main Rd', 'postal_code' => '8001'],
+        'billing_address' => ['line1' => '1 Main Rd'],
+    ]);
+
+    // Checkout reads `customer` off the acting instance before creating it, and
+    // the test reuses that same instance across requests.
+    $user->unsetRelation('customer');
+
+    $order = Order::latest('id')->first();
+    $order->update(['payment_gateway' => 'stripe', 'payment_id' => 'pay_test']);
+
+    return $order->fresh();
+}
+
+it('deducts stock exactly once when a payment is confirmed', function () {
+    [$product, $variant] = shopFixture(10);
+    $user = User::factory()->create();
+    $order = pendingOrder($user, $variant, $product, 2);
+
+    fakePaymentGateway(['confirm' => [
+        'status' => 'success', 'payment_id' => 'pay_test', 'amount' => $order->total_cents, 'currency' => 'ZAR',
+    ]]);
+
+    $this->actingAs($user)
+        ->postJson('/payment/confirm', ['order_id' => $order->id, 'payment_id' => 'pay_test'])
+        ->assertOk();
+
+    expect(InventoryLevel::where('product_variant_id', $variant->id)->sum('quantity'))->toBe(8);
+});
+
+it('deducts stock exactly once when the webhook marks an order paid', function () {
+    [$product, $variant] = shopFixture(10);
+    $user = User::factory()->create();
+    $order = pendingOrder($user, $variant, $product, 2);
+
+    // The webhook payload carries no order id, so the gateway pins one.
+    fakePaymentGateway([
+        'confirm' => ['status' => 'success', 'payment_id' => 'pay_test', 'amount' => $order->total_cents, 'currency' => 'ZAR'],
+        'webhook' => ['status' => 'paid', 'order_id' => $order->id],
+    ]);
+
+    $this->postJson('/webhooks/payment/stripe', ['id' => 'evt_test'])->assertOk();
+
+    expect(InventoryLevel::where('product_variant_id', $variant->id)->sum('quantity'))->toBe(8);
+});
+
+it('records one inventory movement per warehouse it draws from', function () {
+    [$product, $variant] = shopFixture(3);                      // JHB holds 3
+    $cpt = Warehouse::create(['name' => 'CPT', 'code' => 'CPT-01', 'is_active' => true]);
+    InventoryLevel::create([
+        'product_variant_id' => $variant->id, 'warehouse_id' => $cpt->id, 'quantity' => 7,
+    ]);
+
+    $user = User::factory()->create();
+    $order = pendingOrder($user, $variant, $product, 9);         // more than either holds
+
+    fakePaymentGateway(['confirm' => [
+        'status' => 'success', 'payment_id' => 'pay_test', 'amount' => $order->total_cents, 'currency' => 'ZAR',
+    ]]);
+
+    $this->actingAs($user)
+        ->postJson('/payment/confirm', ['order_id' => $order->id, 'payment_id' => 'pay_test'])
+        ->assertOk();
+
+    $movements = InventoryMovement::where('reference_id', $order->id)
+        ->where('reference_type', Order::class)
+        ->get();
+
+    // Fullest first: CPT gives all 7, JHB covers the remaining 2.
+    expect($movements)->toHaveCount(2)
+        ->and($movements->sum('quantity'))->toBe(-9)
+        ->and($movements->firstWhere('warehouse_id', $cpt->id)->quantity)->toBe(-7)
+        ->and(InventoryLevel::where('product_variant_id', $variant->id)->sum('quantity'))->toBe(1)
+        ->and($movements->pluck('type')->unique()->all())->toBe(['sale']);
+});
+
+it('does not deduct twice when a gateway retries the paid webhook', function () {
+    [$product, $variant] = shopFixture(10);
+    $user = User::factory()->create();
+    $order = pendingOrder($user, $variant, $product, 2);
+
+    // The webhook payload carries no order id, so the gateway pins one.
+    fakePaymentGateway([
+        'confirm' => ['status' => 'success', 'payment_id' => 'pay_test', 'amount' => $order->total_cents, 'currency' => 'ZAR'],
+        'webhook' => ['status' => 'paid', 'order_id' => $order->id],
+    ]);
+
+    $this->postJson('/webhooks/payment/stripe', ['id' => 'evt_test'])->assertOk();
+    $this->postJson('/webhooks/payment/stripe', ['id' => 'evt_test'])->assertOk();
+
+    expect(InventoryLevel::where('product_variant_id', $variant->id)->sum('quantity'))->toBe(8);
 });

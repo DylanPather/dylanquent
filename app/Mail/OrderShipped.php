@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\AddressesTheCustomer;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -11,13 +12,14 @@ use Illuminate\Queue\SerializesModels;
 
 class OrderShipped extends Mailable
 {
-    use Queueable, SerializesModels;
+    use AddressesTheCustomer, Queueable, SerializesModels;
 
     public function __construct(public Order $order) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
+            to: $this->customerRecipients(),
             subject: "Your Order #{$this->order->order_number} Has Shipped",
         );
     }

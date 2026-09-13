@@ -1,13 +1,16 @@
 name: linter
 
+# 'develop' was the trigger here and no such branch has ever existed, so
+# neither of these ran on a single pull request into dev — the branch all the
+# work actually goes through.
 on:
   push:
     branches:
-      - develop
+      - dev
       - main
   pull_request:
     branches:
-      - develop
+      - dev
       - main
 
 permissions:

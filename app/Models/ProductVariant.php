@@ -69,4 +69,3 @@ class ProductVariant extends Model
         return $this->total_stock >= $quantity;
     }
 }
-

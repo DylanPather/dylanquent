@@ -1,0 +1,112 @@
+name: migrate production
+
+# Vercel never runs migrations. Its build step is `npm run build` (Node only,
+# no PHP), it has no post-deploy hook, and the deployed function filesystem is
+# read-only and only wakes on an HTTP request. So the schema on Neon only ever
+# moved when someone remembered to run artisan by hand from their laptop.
+#
+# This runs them for you on every push to main — the branch Vercel deploys to
+# production. The migrations in this repo are additive (new columns, widened
+# constraints), so it is safe that this races Vercel's own build rather than
+# strictly preceding it.
+#
+# Needs one repository secret: DATABASE_URL, the Neon connection string.
+# Vercel dashboard → Storage → your Postgres → .env.local tab.
+
+on:
+  push:
+    branches:
+      - main
+  # Lets you re-run migrations from the Actions tab without pushing anything,
+  # and seed the catalog — which is what puts image URLs in the database.
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Also run the seeders (needed once — this is what gives products their images)'
+        type: boolean
+        default: false
+
+# Never let two migration runs overlap on the same database.
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      # Migrations neither encrypt nor decrypt anything, so a throwaway key is
+      # enough to boot artisan. Keeping the real APP_KEY out of here means this
+      # workflow needs exactly one secret.
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: pgsql
+      # Migrations must NOT go through Neon's pooled endpoint. PgBouncer in
+      # transaction mode moves statements between backends mid-transaction, so
+      # a migration's DDL can be rolled back while its row in the migrations
+      # table commits — leaving the log claiming a migration ran when the
+      # column it adds does not exist. That happened to
+      # add_image_url_to_product_variants_table and had to be repaired by hand.
+      # DATABASE_URL_UNPOOLED is Neon's direct endpoint; keep this secret set
+      # to that one, and DATABASE_URL is only a fallback.
+      DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED || secrets.DATABASE_URL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      LOG_CHANNEL: stderr
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stop early if the database secret is missing
+        run: |
+          if [ -z "${DATABASE_URL}" ]; then
+            echo "::error::No database secret set. Add DATABASE_URL_UNPOOLED under Settings → Secrets and variables → Actions, using the value of the same name from the Vercel dashboard (Storage → your Postgres → .env.local tab). It must be the unpooled endpoint — migrating through the pooler can record a migration as run without applying it."
+            exit 1
+          fi
+          case "${DATABASE_URL}" in
+            *-pooler.*) echo "::warning::This looks like Neon's POOLED endpoint. Migrations should use DATABASE_URL_UNPOOLED — the pooler can commit the migrations row while rolling back the DDL." ;;
+          esac
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          tools: composer:v2
+          extensions: pdo_pgsql
+
+      - name: Install Dependencies
+        run: composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
+
+      - name: Show what is pending
+        run: php artisan migrate:status
+
+      - name: Migrate
+        run: php artisan migrate --force
+
+      # A migration that adds a column invalidates every cached `select *`
+      # plan for that table, and Neon's pooled backends are long-lived enough
+      # to keep serving the stale one — which is a deterministic 500 on the
+      # affected pages until those backends are recycled. Drop the idle ones
+      # so the next request plans afresh.
+      - name: Clear stale query plans
+        run: php artisan db:clear-plan-cache
+
+      # The storefront reads every image URL out of the database —
+      # products.thumbnail_url, product_images.url, product_variants.image_url.
+      # The files in public/images ship with the deployment, but nothing points
+      # at them until DropSeeder has run, which is why a freshly deployed shop
+      # shows no imagery. Seeders use updateOrCreate throughout, so this is
+      # safe to re-run.
+      - name: Refuse to seed without an admin password
+        if: inputs.seed
+        run: |
+          if [ -z "${ADMIN_PASSWORD}" ]; then
+            echo "::error::Seeding needs an ADMIN_PASSWORD secret. Without one AdminUserSeeder either generates a password and prints it into this log, or — because GitHub passes an unset secret as an empty string — creates the admin with a blank password. Add ADMIN_PASSWORD under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Seed
+        if: inputs.seed
+        run: php artisan db:seed --force

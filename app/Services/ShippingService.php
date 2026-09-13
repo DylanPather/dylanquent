@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\ShipmentLabel;
 
@@ -71,7 +72,7 @@ class ShippingService
     public function markAsShipped(Order $order, string $carrier, ?string $trackingNumber = null): void
     {
         $order->update([
-            'status' => 'fulfilled',
+            'status' => OrderStatus::Fulfilled,
             'shipped_at' => now(),
             'tracking_number' => $trackingNumber,
         ]);

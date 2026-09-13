@@ -75,14 +75,17 @@ export default function OrderShow() {
         setShowStatusMenu(false);
     };
 
+    // One entry per App\Enums\OrderStatus case. 'shipped' used to sit here
+    // beside 'fulfilled'; it was never a status the orders table accepted.
     const statusColors: Record<string, { bg: string; text: string; icon: any }> = {
         pending: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-300', icon: Clock },
+        payment_failed: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-300', icon: XCircle },
         paid: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-300', icon: CheckCircle },
         processing: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-800 dark:text-purple-300', icon: Package },
         fulfilled: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300', icon: Truck },
-        shipped: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300', icon: Truck },
         cancelled: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-300', icon: XCircle },
         refunded: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-300', icon: AlertCircle },
+        partially_refunded: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-300', icon: AlertCircle },
     };
 
     const StatusIcon = statusColors[order.status]?.icon || AlertCircle;
