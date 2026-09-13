@@ -28,10 +28,13 @@ class StorefrontSettingsSeeder extends Seeder
             [
                 'key' => 'featured_products',
                 'value' => json_encode([
+                    // The three products that actually exist. DropSeeder swaps
+                    // these images for the drop's own hero shots once the
+                    // prints are in; the pre-drop renders stand in until then.
                     ['name' => 'Boxy Tee', 'tag' => '01', 'image' => '/images/products/boxy_tee_black_1769346857146.png', 'slug' => 'boxy-tee'],
                     ['name' => 'Heavy Hoodie', 'tag' => '02', 'image' => '/images/products/heavy_hoodie_grey_1769346878833.png', 'slug' => 'heavy-hoodie'],
-                    ['name' => 'Cargo Trouser', 'tag' => '03', 'image' => '/images/products/cargo_pants_olive_1769346899867.png', 'slug' => 'cargo-trouser'],
-                    ['name' => 'Cap / DLQ', 'tag' => '04', 'image' => '/images/products/streetwear_cap_black_1769346921972.png', 'slug' => 'signature-cap'],
+                    ['name' => 'Development Tee', 'tag' => '03', 'image' => '/images/products/development-release/tee-zero-noise-back.webp', 'slug' => 'development-tee'],
+                    ['name' => 'Development Hoodie', 'tag' => '04', 'image' => '/images/products/development-release/hoodie-ship-it-back.webp', 'slug' => 'development-hoodie'],
                 ]),
                 'type' => 'json'
             ],

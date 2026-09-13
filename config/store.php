@@ -54,14 +54,18 @@ return [
         'default_method' => env('STORE_SHIPPING_DEFAULT', 'door'),
 
         /*
-         | Free delivery from R900. Set 0 to disable the threshold.
+         | Free delivery from R800. Set 0 to disable the threshold.
          |
-         | Sits just under the two natural baskets — one hoodie at R995, two
-         | tees at R990 — so both clear it, while a single tee does not. At
-         | R1 000 a lone hoodie missed free delivery by five rand, which reads
-         | as a trick rather than a threshold.
+         | Sits under every basket of two or more — a hoodie at R899 clears it
+         | alone, two tees at R898 clear it — while a single R449 tee does not,
+         | which is the nudge it is there for. Keep it below the hoodie: a
+         | threshold a lone hoodie misses by a rand reads as a trick, and at
+         | R900 this one missed by exactly that.
+         |
+         | The hoodie price assumes this is absorbed on every hoodie order —
+         | see the run maths in DropSeeder before raising the threshold.
          */
-        'free_over_cents' => (int) env('STORE_SHIPPING_FREE_OVER_CENTS', 90000),
+        'free_over_cents' => (int) env('STORE_SHIPPING_FREE_OVER_CENTS', 80000),
 
         /*
          | Live rates from Bob Go, which aggregates The Courier Guy, Pargo,
