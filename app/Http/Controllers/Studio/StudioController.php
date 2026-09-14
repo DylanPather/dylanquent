@@ -85,22 +85,24 @@ class StudioController extends Controller
     {
         return [
             [
-                'name' => 'Dylanquent Commerce',
-                'category' => 'Platform · In production',
+                'name' => 'Dylanquent Merch',
+                'category' => 'Platform · In progress',
                 'year' => '2026',
                 'text' => 'The commerce platform running this brand: storefront, checkout, payments, inventory, fulfilment and a full operations dashboard.',
                 'tags' => ['Laravel 12', 'React 19', 'Inertia', 'Stripe'],
                 'href' => '/merch',
+                'external' => false,
                 'placeholder' => false,
             ],
             [
-                'name' => 'Project Slot 02',
-                'category' => 'Replace with a real case study',
-                'year' => '—',
-                'text' => 'Placeholder card. Swap this for a client build: the problem, what you shipped, and the outcome in one or two lines.',
-                'tags' => ['Add', 'Your', 'Stack'],
-                'href' => null,
-                'placeholder' => true,
+                'name' => 'Classly',
+                'category' => 'EdTech platform · In progress',
+                'year' => '2026',
+                'text' => 'A CAPS-aligned learning platform for Grade 10–12 maths: an AI teacher that tracks mastery per skill, and a marketplace of verified South African teachers it hands over to when a learner stays stuck.',
+                'tags' => ['CAPS', 'AI Tutoring', 'Marketplace', 'POPIA'],
+                'href' => 'https://classly.co.za',
+                'external' => true,
+                'placeholder' => false,
             ],
             [
                 'name' => 'Project Slot 03',
@@ -109,6 +111,7 @@ class StudioController extends Controller
                 'text' => 'Placeholder card. Swap this for a client build: the problem, what you shipped, and the outcome in one or two lines.',
                 'tags' => ['Add', 'Your', 'Stack'],
                 'href' => null,
+                'external' => false,
                 'placeholder' => true,
             ],
         ];
