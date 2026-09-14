@@ -5,7 +5,7 @@ import React, { FormEvent } from 'react';
 import StudioLayout from '../../layouts/studio-layout';
 
 interface Service { index: string; title: string; text: string; points: string[] }
-interface Work { name: string; category: string; year: string; text: string; tags: string[]; href: string | null; placeholder: boolean }
+interface Work { name: string; category: string; year: string; text: string; tags: string[]; href: string | null; external: boolean; placeholder: boolean }
 interface ProcessStep { step: string; title: string; text: string }
 interface Engagement { name: string; price: string; unit: string; duration: string; summary: string; includes: string[]; featured: boolean }
 interface AddOn { item: string; price: string }
@@ -196,14 +196,30 @@ function SelectedWork({ work }: { work: Work[] }) {
                         </motion.div>
                     );
 
-                    return project.href ? (
+                    if (!project.href) {
+                        return (
+                            <div key={project.name} className="h-full">
+                                {card}
+                            </div>
+                        );
+                    }
+
+                    // External case studies leave the app, so they need a real
+                    // anchor — an Inertia visit would try to fetch a page prop.
+                    return project.external ? (
+                        <a
+                            key={project.name}
+                            href={project.href}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className="h-full"
+                        >
+                            {card}
+                        </a>
+                    ) : (
                         <Link key={project.name} href={project.href} className="h-full">
                             {card}
                         </Link>
-                    ) : (
-                        <div key={project.name} className="h-full">
-                            {card}
-                        </div>
                     );
                 })}
             </div>
